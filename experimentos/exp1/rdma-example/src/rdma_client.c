@@ -267,44 +267,44 @@ static int client_connect_to_server()
  */
 static int client_xchange_metadata_with_server()
 {
-	struct ibv_wc wc[2];
-	int ret = -1;
-	client_src_mr = rdma_buffer_register(pd,
-			src,
-			strlen(src),
-			(IBV_ACCESS_LOCAL_WRITE|
-			 IBV_ACCESS_REMOTE_READ|
-			 IBV_ACCESS_REMOTE_WRITE));
-
-	if(!client_src_mr){
-		rdma_error("Failed to register the first buffer, ret = %d \n", ret);
-		return ret;
-	}
-	/* we prepare metadata for the first buffer */
-	client_metadata_attr.address = (uint64_t) client_src_mr->addr; 
-	client_metadata_attr.length = client_src_mr->length; 
-	client_metadata_attr.stag.local_stag = client_src_mr->lkey;
-	/* now we register the metadata memory */
-	client_metadata_mr = rdma_buffer_register(pd,
-			&client_metadata_attr,
-			sizeof(client_metadata_attr),
-			IBV_ACCESS_LOCAL_WRITE);
-	if(!client_metadata_mr) {
-		rdma_error("Failed to register the client metadata buffer, ret = %d \n", ret);
-		return ret;
-	}
-	/* now we fill up SGE */
-	client_send_sge.addr = (uint64_t) client_metadata_mr->addr;
-	client_send_sge.length = (uint32_t) client_metadata_mr->length;
-	client_send_sge.lkey = client_metadata_mr->lkey;
-	/* now we link to the send work request */
-	bzero(&client_send_wr, sizeof(client_send_wr));
-	client_send_wr.sg_list = &client_send_sge;
-	client_send_wr.num_sge = 1;
-	client_send_wr.opcode = IBV_WR_SEND;
-	client_send_wr.send_flags = IBV_SEND_SIGNALED;
 	while(1)
 	{
+		struct ibv_wc wc[2];
+		int ret = -1;
+		client_src_mr = rdma_buffer_register(pd,
+				src,
+				strlen(src),
+				(IBV_ACCESS_LOCAL_WRITE|
+			 	IBV_ACCESS_REMOTE_READ|
+			 	IBV_ACCESS_REMOTE_WRITE));
+
+		if(!client_src_mr){
+			rdma_error("Failed to register the first buffer, ret = %d \n", ret);
+			return ret;
+		}
+		/* we prepare metadata for the first buffer */
+		client_metadata_attr.address = (uint64_t) client_src_mr->addr; 
+		client_metadata_attr.length = client_src_mr->length; 
+		client_metadata_attr.stag.local_stag = client_src_mr->lkey;
+		/* now we register the metadata memory */
+		client_metadata_mr = rdma_buffer_register(pd,
+				&client_metadata_attr,
+				sizeof(client_metadata_attr),
+				IBV_ACCESS_LOCAL_WRITE);
+		if(!client_metadata_mr) {
+			rdma_error("Failed to register the client metadata buffer, ret = %d \n", ret);
+			return ret;
+		}
+		/* now we fill up SGE */
+		client_send_sge.addr = (uint64_t) client_metadata_mr->addr;
+		client_send_sge.length = (uint32_t) client_metadata_mr->length;
+		client_send_sge.lkey = client_metadata_mr->lkey;
+		/* now we link to the send work request */
+		bzero(&client_send_wr, sizeof(client_send_wr));
+		client_send_wr.sg_list = &client_send_sge;
+		client_send_wr.num_sge = 1;
+		client_send_wr.opcode = IBV_WR_SEND;
+		client_send_wr.send_flags = IBV_SEND_SIGNALED;
 		/* Now we post it */
 		ret = ibv_post_send(client_qp, 
 		       	&client_send_wr,
