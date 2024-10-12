@@ -306,6 +306,7 @@ static int client_xchange_metadata_with_server()
 		client_send_wr.opcode = IBV_WR_SEND;
 		client_send_wr.send_flags = IBV_SEND_SIGNALED;
 		/* Now we post it */
+		printf("I am posting data!\n");
 		ret = ibv_post_send(client_qp, 
 		       	&client_send_wr,
 	       	&bad_client_send_wr);
@@ -317,6 +318,7 @@ static int client_xchange_metadata_with_server()
 		/* at this point we are expecting 2 work completion. One for our 
 	 	* send and one for recv that we will get from the server for 
 	 	* its buffer information */
+	 	printf("Waiting for work completions\n");
 		ret = process_work_completion_events(io_completion_channel, 
 				wc, 2);
 		if(ret != 2) {
@@ -324,6 +326,7 @@ static int client_xchange_metadata_with_server()
 					ret);
 			return ret;
 		}
+		printf("Got two work completions\n");
 		debug("Server sent us its buffer location and credentials, showing \n");
 		show_rdma_buffer_attr(&server_metadata_attr);
 		sleep(4);

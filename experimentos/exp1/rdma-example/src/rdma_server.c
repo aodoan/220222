@@ -283,8 +283,6 @@ static int send_server_metadata_to_client()
 	 * in our example. We will receive a work completion notification for 
 	 * our pre-posted receive request.
 	 */
-	while(1)
-	{
 		ret = process_work_completion_events(io_completion_channel, &wc, 1);
 		if (ret != 1) {
 			rdma_error("Failed to receive , ret = %d \n", ret);
@@ -295,6 +293,8 @@ static int send_server_metadata_to_client()
 		show_rdma_buffer_attr(&client_metadata_attr);
 		printf("The client has requested buffer length of : %u bytes \n", 
 				client_metadata_attr.length);
+	while(1)
+	{
 		/* We need to setup requested memory buffer. This is where the client will 
 		* do RDMA READs and WRITEs. */
        	server_buffer_mr = rdma_buffer_alloc(pd /* which protection domain */, 
