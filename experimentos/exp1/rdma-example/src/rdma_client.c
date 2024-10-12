@@ -2,7 +2,7 @@
  * Code written originally by		 	Animesh Trivedi
  * Modified by				 			Claudinei Aparecido
  */
-
+#include <unistd.h>
 #include "rdma_common.h"
 
 
@@ -326,6 +326,7 @@ static int client_xchange_metadata_with_server()
 		}
 		debug("Server sent us its buffer location and credentials, showing \n");
 		show_rdma_buffer_attr(&server_metadata_attr);
+		sleep(4);
 	}
 	return 0;
 }
