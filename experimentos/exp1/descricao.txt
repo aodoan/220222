@@ -1,0 +1,5 @@
+Fazer um benchmark da performance usando RDMA entre duas VMs, usando iWarp como implementação de RDMA
+
+como base, foi usado o seguinte código: https://github.com/animeshtrivedi/rdma-example (alterado e comentado)
+
+
