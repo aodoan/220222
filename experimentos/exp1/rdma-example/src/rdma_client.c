@@ -508,8 +508,8 @@ int test_chat()
 		/* wr */
 		send_wr.sg_list = &send_sge;
 		send_wr.num_sge = 1; /* number of SGEs */
+		debug("Sending wr\n")
 		int ret = ibv_post_send(client_qp, &send_wr, &bad_send_wr);
-		printf("%d", ret);
 		//******************************************** */
 		/*
 		static struct ibv_comp_channel *io_completion_channel = NULL;
@@ -517,6 +517,7 @@ int test_chat()
 		*/
 		//Wait for completion of WR we just posted
 		struct ibv_wc wc;
+		debug("Waiting for response\n");
 		ret = ibv_get_cq_event(io_completion_channel, &client_cq, NULL);
 		ret = ibv_req_notify_cq(client_cq, 0);
 		ret = ibv_poll_cq(client_cq, 1, &wc); /* poll for 1 WC */
