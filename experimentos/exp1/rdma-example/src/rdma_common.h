@@ -31,7 +31,7 @@
 	fprintf(stderr, "%s : %d : ERROR : "msg, __FILE__, __LINE__, ## args);\
 }while(0);
 
-#ifdef ACN_RDMA_DEBUG 
+#ifndef ACN_RDMA_DEBUG 
 /* Debug Macro */
 #define debug(msg, args...) do {\
     printf("DEBUG: "msg, ## args);\

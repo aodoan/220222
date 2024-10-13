@@ -429,6 +429,29 @@ void usage()
 	exit(1);
 }
 
+int test_chat_server()
+{
+	/*
+	static struct ibv_comp_channel *io_completion_channel = NULL;
+	static struct ibv_cq *cq = NULL;
+	*/	
+	//Wait for wc
+	struct ibv_wc wc;
+	int ret = ibv_get_cq_event(io_completion_channel, &cq, NULL);
+	ret = ibv_req_notify_cq(cq, 0);
+	debug("I AM WAITING FOR AN EVENT!\n");
+	ret = ibv_poll_cq(cq, 1, &wc); /* poll for 1 WC */
+	if (wc.status == IBV_WC_SUCCESS && wc.opcode == IBV_WC_RECV) 
+	{
+		/* ack the event */
+		ibv_ack_cq_events(cq, 1); /* 1 event */
+		debug("I ACK THE EVENT!\n");
+	}
+
+
+	return 0;
+}
+
 int main(int argc, char **argv) 
 {
 	int ret, option;
@@ -479,6 +502,11 @@ int main(int argc, char **argv)
 	if (ret) {
 		rdma_error("Failed to send server metadata to the client, ret = %d \n", ret);
 		return ret;
+	}
+	while(1)
+	{
+		int ret = test_chat_server();
+
 	}
 	ret = disconnect_and_cleanup();
 	if (ret) { 

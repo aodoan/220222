@@ -487,7 +487,46 @@ static int client_disconnect_and_clean()
 
 int test_chat()
 {
+	/*
+		Information needed to send message
+		Memory region
 
+		ibv_post_send(qp, &send_wr, &bad_send_wr)
+		qp -> client_qp
+		ibv_send_wr client_send_wr, *bad_client_send_wr 
+		ibv_recv_wr server_recv_wr, *bad_server_recv_wr 
+		static struct ibv_sge client_send_sge, server_recv_sge;
+	*/
+	while(1)
+	{
+		//Prepare and send WR on the QP. 
+		struct ibv_send_wr send_wr, *bad_send_wr = NULL;
+		struct ibv_sge send_sge;
+		send_sge.addr = 	client_send_mr->address; /* addr */
+		send_sge.length = 	client_send_mr->length; /* length */
+		send_sge.lkey = 	client_send_mr->lkey; /* STag */
+		/* wr */
+		send_wr.sg_list = &send_sge;
+		send_wr.num_sge = 1; /* number of SGEs */
+		int ret = ibv_post_send(client_qp, &send_wr, &bad_send_wr);
+		printf("%d", ret);
+		//******************************************** */
+		/*
+		static struct ibv_comp_channel *io_completion_channel = NULL;
+		static struct ibv_cq *client_cq = NULL;
+		*/
+		//Wait for completion of WR we just posted
+		struct ibv_wc wc;
+		ret = ibv_get_cq_event(io_completion_channel, &client_cq, NULL);
+		ret = ibv_req_notify_cq(client_cq, 0);
+		ret = ibv_poll_cq(client_cq, 1, &wc); /* poll for 1 WC */
+		if (wc.status == IBV_WC_SUCCESS && wc.opcode == IBV_WC_SEND) 
+		{
+			/* ack the event */
+			ibv_ack_cq_events(client_cq, 1); /* 1 event */
+		}	
+	
+	}
 
 }
 void usage() {
