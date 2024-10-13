@@ -52,6 +52,10 @@
 /* Default port where the RDMA server is listening */
 #define DEFAULT_RDMA_PORT (20886)
 
+/*********************ADDED DEFINES************************/
+/*Specifies the default buffer length for MR*/
+#define DEFAULT_BUFF_SIZE	(1024)
+
 /* 
  * We use attribute so that compiler does not step in and try to pad the structure.
  * We use this structure to exchange information between the server and the client. 
@@ -119,10 +123,11 @@ struct ibv_mr *rdma_buffer_register(struct ibv_pd *pd,
  */
 void rdma_buffer_deregister(struct ibv_mr *mr);
 
-/* Processes a work completion (WC) notification. 
- * @comp_channel: Completion channel where the notifications are expected to arrive 
- * @wc: Array where to hold the work completion elements 
- * @max_wc: Maximum number of expected work completion (WC) elements. wc must be 
+/**  
+ * @brief Processes a work completion (WC) notification. 
+ * @param comp_channel: Completion channel where the notifications are expected to arrive 
+ * @param wc: Array where to hold the work completion elements 
+ * @param max_wc: Maximum number of expected work completion (WC) elements. wc must be 
  *          atleast this size.
  */
 int process_work_completion_events(struct ibv_comp_channel *comp_channel, 

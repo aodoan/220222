@@ -267,70 +267,66 @@ static int client_connect_to_server()
  */
 static int client_xchange_metadata_with_server()
 {
-	while(1)
-	{
-		struct ibv_wc wc[2];
-		int ret = -1;
-		client_src_mr = rdma_buffer_register(pd,
-				src,
-				strlen(src),
-				(IBV_ACCESS_LOCAL_WRITE|
-			 	IBV_ACCESS_REMOTE_READ|
-			 	IBV_ACCESS_REMOTE_WRITE));
+	/* SLOW DATA PATH*/
+	struct ibv_wc wc[2];
+	int ret = -1;
+	client_src_mr = rdma_buffer_register(pd,
+			src,
+			strlen(src),
+			(IBV_ACCESS_LOCAL_WRITE|
+			IBV_ACCESS_REMOTE_READ|
+			IBV_ACCESS_REMOTE_WRITE));
 
-		if(!client_src_mr){
-			rdma_error("Failed to register the first buffer, ret = %d \n", ret);
-			return ret;
-		}
-		/* we prepare metadata for the first buffer */
-		client_metadata_attr.address = (uint64_t) client_src_mr->addr; 
-		client_metadata_attr.length = client_src_mr->length; 
-		client_metadata_attr.stag.local_stag = client_src_mr->lkey;
-		/* now we register the metadata memory */
-		client_metadata_mr = rdma_buffer_register(pd,
-				&client_metadata_attr,
-				sizeof(client_metadata_attr),
-				IBV_ACCESS_LOCAL_WRITE);
-		if(!client_metadata_mr) {
-			rdma_error("Failed to register the client metadata buffer, ret = %d \n", ret);
-			return ret;
-		}
-		/* now we fill up SGE */
-		client_send_sge.addr = (uint64_t) client_metadata_mr->addr;
-		client_send_sge.length = (uint32_t) client_metadata_mr->length;
-		client_send_sge.lkey = client_metadata_mr->lkey;
-		/* now we link to the send work request */
-		bzero(&client_send_wr, sizeof(client_send_wr));
-		client_send_wr.sg_list = &client_send_sge;
-		client_send_wr.num_sge = 1;
-		client_send_wr.opcode = IBV_WR_SEND;
-		client_send_wr.send_flags = IBV_SEND_SIGNALED;
-		/* Now we post it */
-		printf("I am posting data!\n");
-		ret = ibv_post_send(client_qp, 
-		       	&client_send_wr,
-	       	&bad_client_send_wr);
-		if (ret) {
-			rdma_error("Failed to send client metadata, errno: %d \n", 
-					-errno);
-			return -errno;
-		}
-		/* at this point we are expecting 2 work completion. One for our 
-	 	* send and one for recv that we will get from the server for 
-	 	* its buffer information */
-	 	printf("Waiting for work completions\n");
-		ret = process_work_completion_events(io_completion_channel, 
-				wc, 2);
-		if(ret != 2) {
-			rdma_error("We failed to get 2 work completions , ret = %d \n",
-					ret);
-			return ret;
-		}
-		printf("Got two work completions\n");
-		debug("Server sent us its buffer location and credentials, showing \n");
-		show_rdma_buffer_attr(&server_metadata_attr);
-		sleep(4);
+	if(!client_src_mr){
+		rdma_error("Failed to register the first buffer, ret = %d \n", ret);
+		return ret;
 	}
+	/* we prepare metadata for the first buffer */
+	client_metadata_attr.address = (uint64_t) client_src_mr->addr; 
+	client_metadata_attr.length = client_src_mr->length; 
+	client_metadata_attr.stag.local_stag = client_src_mr->lkey;
+	/* now we register the metadata memory */
+	client_metadata_mr = rdma_buffer_register(pd,
+			&client_metadata_attr,
+			sizeof(client_metadata_attr),
+			IBV_ACCESS_LOCAL_WRITE);
+	if(!client_metadata_mr) {
+		rdma_error("Failed to register the client metadata buffer, ret = %d \n", ret);
+		return ret;
+	}
+	/* now we fill up SGE */
+	client_send_sge.addr = (uint64_t) client_metadata_mr->addr;
+	client_send_sge.length = (uint32_t) client_metadata_mr->length;
+	client_send_sge.lkey = client_metadata_mr->lkey;
+	/* now we link to the send work request */
+	bzero(&client_send_wr, sizeof(client_send_wr));
+	client_send_wr.sg_list = &client_send_sge;
+	client_send_wr.num_sge = 1;
+	client_send_wr.opcode = IBV_WR_SEND;
+	client_send_wr.send_flags = IBV_SEND_SIGNALED;
+	/* Now we post it */
+	printf("I am posting data!\n");
+	ret = ibv_post_send(client_qp, 
+		    &client_send_wr,
+	    &bad_client_send_wr);
+	if (ret) {
+		rdma_error("Failed to send client metadata, errno: %d \n", 
+				-errno);
+		return -errno;
+	}
+	/* at this point we are expecting 2 work completion. One for our 
+	* send and one for recv that we will get from the server for 
+	* its buffer information */
+	printf("Waiting for work completions\n");
+	ret = process_work_completion_events(io_completion_channel, 
+			wc, 2);
+	if(ret != 2) {
+		rdma_error("We failed to get 2 work completions , ret = %d \n",
+				ret);
+		return ret;
+	}
+	debug("Server sent us its buffer location and credentials, showing \n");
+	show_rdma_buffer_attr(&server_metadata_attr);
 	return 0;
 }
 
@@ -343,6 +339,9 @@ static int client_remote_memory_ops()
 {
 	struct ibv_wc wc;
 	int ret = -1;
+	/* Creating a memory region that is associated with the Protection Domain
+		rdma_buffer_register encapsulates the ibv_reg_mr function
+	*/
 	client_dst_mr = rdma_buffer_register(pd,
 			dst,
 			strlen(src),
@@ -486,6 +485,11 @@ static int client_disconnect_and_clean()
 	return 0;
 }
 
+int test_chat()
+{
+
+
+}
 void usage() {
 	printf("Usage:\n");
 	printf("rdma_client: [-a <server_addr>] [-p <server_port>] -s string (required)\n");
@@ -577,6 +581,19 @@ int main(int argc, char **argv) {
 	} else {
 		printf("...\nSUCCESS, source and destination buffers match \n");
 	}
+	/* It`s now assumed that the channel is working*/
+	int abc;
+	while(1)
+	{
+		abc = scanf("%d", &abc);
+		ret = test_chat();
+		if (ret)
+		{
+			printf("");
+		}
+	}
+
+
 	ret = client_disconnect_and_clean();
 	if (ret) {
 		rdma_error("Failed to cleanly disconnect and clean up resources \n");
