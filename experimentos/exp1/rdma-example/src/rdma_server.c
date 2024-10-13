@@ -436,10 +436,11 @@ int test_chat_server()
 	static struct ibv_cq *cq = NULL;
 	*/	
 	//Wait for wc
+
 	struct ibv_wc wc;
-	int ret = ibv_get_cq_event(io_completion_channel, &cq, NULL);
-	ret = ibv_req_notify_cq(cq, 0);
 	debug("I AM WAITING FOR AN EVENT!\n");
+	int ret = process_work_completion_events(io_completion_channel, wc, 1);
+	debug("FOUND AN EVENT!");
 	ret = ibv_poll_cq(cq, 1, &wc); /* poll for 1 WC */
 	if (wc.status == IBV_WC_SUCCESS && wc.opcode == IBV_WC_RECV) 
 	{
