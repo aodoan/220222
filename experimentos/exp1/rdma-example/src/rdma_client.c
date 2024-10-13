@@ -509,7 +509,7 @@ int test_chat()
 		send_wr.sg_list = &send_sge;
 		send_wr.num_sge = 1; /* number of SGEs */
 		debug("Sending wr\n")
-		int ret = ibv_post_send(client_qp, &send_wr, &bad_send_wr);
+		int ret = ibv_post_send(client_qp, &client_send_wr, &client_send_wr);
 		if (ret) {
 			rdma_error("Failed to send the message!\n");
 		}
