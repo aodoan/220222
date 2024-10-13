@@ -502,9 +502,9 @@ int test_chat()
 		//Prepare and send WR on the QP. 
 		struct ibv_send_wr send_wr, *bad_send_wr = NULL;
 		struct ibv_sge send_sge;
-		send_sge.addr = 	client_send_wr->address; /* addr */
-		send_sge.length = 	client_send_wr->length; /* length */
-		send_sge.lkey = 	client_send_wr->lkey; /* STag */
+		send_sge.addr = 	(uint64_t) client_src_mr->addr; /* addr */
+		send_sge.length = 	client_src_mr->length; /* length */
+		send_sge.lkey = 	client_src_mr->lkey; /* STag */
 		/* wr */
 		send_wr.sg_list = &send_sge;
 		send_wr.num_sge = 1; /* number of SGEs */
@@ -628,7 +628,7 @@ int main(int argc, char **argv) {
 		ret = test_chat();
 		if (ret)
 		{
-			printf("");
+			printf("something wrong!\n");
 		}
 	}
 
