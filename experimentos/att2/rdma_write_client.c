@@ -251,7 +251,7 @@ int main(int argc, char *argv[])
 			return 1;
 		switch (wc.wr_id) {
 		case 0:
-			printf("server ans : %d\n", ntohl(buf[0]));
+			printf("Sum of both numbers: %d\n", ntohl(buf[0]));
 			end_loop = 1;
 			break;
 		case 1:

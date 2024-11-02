@@ -1,5 +1,6 @@
 /*
- * modified from http://www.digitalvampire.org/rdma-tutorial-2007/notes.pdf
+ * modified from https://github.com/w180112/RDMA-example/tree/master
+ * that modified from http://www.digitalvampire.org/rdma-tutorial-2007/notes.pdf
  * 
  * build:
  * gcc -o server rdma_write_server.c -lrdmacm -libverbs
@@ -138,8 +139,12 @@ int main(int argc, char *argv[])
         err = rdma_get_cm_event(cm_channel,&event);
         if (err)
             return err;
+
         if (event->event != RDMA_CM_EVENT_CONNECT_REQUEST)
+        {
+            printf("First message of the client was not an connection request! Aborting conneciton.\n");
             return 1;
+        }
         cm_id = event->id;
         /* Each rdmacm event should be acked. */
         rdma_ack_cm_event(event);
@@ -232,9 +237,9 @@ int main(int argc, char *argv[])
             return 1;
 
         /* Add two integers and send reply back */
-	    printf("client write %d and %d\n", ntohl(buf[0]), ntohl(buf[1]));
+	    printf("client write %d and %d ", ntohl(buf[0]), ntohl(buf[1]));
         buf[0] = htonl(ntohl(buf[0]) + ntohl(buf[1]));
-	
+        printf("sum of both numbers is: %d\n", buf[0]);
         /* register post send, here we use IBV_WR_SEND */
         sge.addr = (uintptr_t)buf; 
         sge.length = sizeof(uint32_t); 
@@ -261,7 +266,8 @@ int main(int argc, char *argv[])
 			return 1;
 		if (wc.status != IBV_WC_SUCCESS)
 			return 1;
-        
+        printf("Status of event: %d", wc.status);
+
 	    err = rdma_get_cm_event(cm_channel,&event);
     	if (err)
         	return err;
