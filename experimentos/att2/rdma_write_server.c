@@ -239,7 +239,7 @@ int main(int argc, char *argv[])
         /* Add two integers and send reply back */
 	    printf("client write %d and %d ", ntohl(buf[0]), ntohl(buf[1]));
         buf[0] = htonl(ntohl(buf[0]) + ntohl(buf[1]));
-        printf("sum of both numbers is: %d\n", buf[0]);
+        printf("sum of both numbers is: %d\n", ntohl(buf[0]));
         /* register post send, here we use IBV_WR_SEND */
         sge.addr = (uintptr_t)buf; 
         sge.length = sizeof(uint32_t); 
