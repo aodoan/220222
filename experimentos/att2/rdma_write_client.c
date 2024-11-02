@@ -241,14 +241,23 @@ int main(int argc, char *argv[])
 
 	int end_loop = 0;
 	while (!end_loop) {
-		if (ibv_get_cq_event(comp_chan,&evt_cq,&cq_context))
+		if (ibv_get_cq_event(comp_chan,&evt_cq,&cq_context)){
+			puts("Failed to get cq event.");
 			return 1;
-		if (ibv_req_notify_cq(cq,0))
+		}
+		if (ibv_req_notify_cq(cq,0)){
+			puts("Failed to get the notification.");
 			return 1;
-		if (ibv_poll_cq(cq,1,&wc) != 1)
+		}
+		if (ibv_poll_cq(cq,1,&wc) != 1){
+			puts("failed to pull the wc");
 			return 1;
-		if (wc.status != IBV_WC_SUCCESS)
+		}
+		if (wc.status != IBV_WC_SUCCESS){
+			puts("wc received is not sucess.");
 			return 1;
+		}
+		printf("passing here\n");
 		switch (wc.wr_id) {
 		case 0:
 			printf("Sum of both numbers: %d\n", ntohl(buf[0]));
@@ -262,6 +271,7 @@ int main(int argc, char *argv[])
 				return 1;
 			break;
 		default:
+			printf("ending loop\n");
 			end_loop = 1;
 			break;
 		}

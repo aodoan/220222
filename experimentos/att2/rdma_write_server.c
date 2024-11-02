@@ -138,8 +138,6 @@ int main(int argc, char *argv[])
     while(1) {
         /* We need to "get" rdmacm event to acquire event occured on NIC. */
         err = rdma_get_cm_event(cm_channel,&event);
-        printf("Got an event! Waiting for sending something back.");
-        sleep(20);
         if (err)
             return err;
 
