@@ -15,6 +15,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <arpa/inet.h>
+#include <unistd.h>
 
 #include <byteswap.h>
 #include <rdma/rdma_cma.h> 
@@ -137,6 +138,8 @@ int main(int argc, char *argv[])
     while(1) {
         /* We need to "get" rdmacm event to acquire event occured on NIC. */
         err = rdma_get_cm_event(cm_channel,&event);
+        printf("Got an event! Waiting for sending something back.");
+        sleep(20);
         if (err)
             return err;
 
@@ -266,7 +269,8 @@ int main(int argc, char *argv[])
 			return 1;
 		if (wc.status != IBV_WC_SUCCESS)
 			return 1;
-        printf("Status of event: %d", wc.status);
+
+        printf("Status of event: %d\n", wc.status);
 
 	    err = rdma_get_cm_event(cm_channel,&event);
     	if (err)
