@@ -128,6 +128,7 @@ int main(int argc, char *argv[])
     /* Binding an indicated addr means rdmacm id will be bound to that RDMA device,
      * we bind wildcard addr here to make rdma_listen listen to all RDMA device
      */
+    printf("waiting for connection.\n");
     err = rdma_bind_addr(listen_id,(struct sockaddr *)&sin);
     if (err) 
         return 1;
@@ -146,6 +147,7 @@ int main(int argc, char *argv[])
     }
     // Ack the first message received
     rdma_ack_cm_event(event);
+    printf("Connection established.\n");
     while(1) {
         printf("starting the loop.\n");
         err = rdma_get_cm_event(cm_channel,&event);
