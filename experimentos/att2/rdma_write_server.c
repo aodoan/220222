@@ -136,6 +136,7 @@ int main(int argc, char *argv[])
         return 1;
 
     while(1) {
+        printf("starting the loop.\n");
         /* We need to "get" rdmacm event to acquire event occured on NIC. */
         err = rdma_get_cm_event(cm_channel,&event);
         if (err)
@@ -145,6 +146,10 @@ int main(int argc, char *argv[])
         {
             printf("First message of the client was not an connection request! Aborting conneciton.\n");
             return 1;
+        }
+        else if (event->event == RDMA_CM_EVENT_DISCONNECTED) {
+            printf("The client send an DISCONNECT message!. quitting");
+            break;
         }
         cm_id = event->id;
         /* Each rdmacm event should be acked. */
@@ -270,20 +275,20 @@ int main(int argc, char *argv[])
 
         printf("Status of event: %d\n", wc.status);
 
-	    err = rdma_get_cm_event(cm_channel,&event);
-    	if (err)
-        	return err;
-	    rdma_ack_cm_event(event);
-
-	    if (event->event == RDMA_CM_EVENT_DISCONNECTED) {
-		    rdma_destroy_qp(cm_id);
-		    ibv_dereg_mr(mr);
-		    free(buf);
-  		    err = rdma_destroy_id(cm_id);
-		    if (err != 0)
-			    perror("destroy cm id fail.");
-	    }
     }
+	err = rdma_get_cm_event(cm_channel,&event);
+    if (err)
+        return err;
+	rdma_ack_cm_event(event);
+
+	if (event->event == RDMA_CM_EVENT_DISCONNECTED) {
+		rdma_destroy_qp(cm_id);
+		ibv_dereg_mr(mr);
+		free(buf);
+  		err = rdma_destroy_id(cm_id);
+		if (err != 0)
+			perror("destroy cm id fail.");
+	}
 	rdma_destroy_event_channel(cm_channel);
     return 0;
 }

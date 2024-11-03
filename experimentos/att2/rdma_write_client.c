@@ -219,84 +219,91 @@ int main(int argc, char *argv[])
 	rdma_ack_cm_event(event);
 	int sentinel = 1;
 	long int a,b;
+	printf("0 0 to quit!\n");
 	while(sentinel)
 	{
 		printf("Enter two numbers: ");
 		scanf("%li %li", &a, &b);
-		/* We prepare ibv_post_recv() first */
-		sge.addr = (uintptr_t)buf; 
-		sge.length = sizeof(uint32_t);
-		sge.lkey = mr->lkey;
+		if (a == 0 && b == 0)
+		{
+			sentinel = 0;
+		}
+		else
+		{
+			/* We prepare ibv_post_recv() first */
+			sge.addr = (uintptr_t)buf; 
+			sge.length = sizeof(uint32_t);
+			sge.lkey = mr->lkey;
 
-    	/* wr_id is used to identify the recv data when get ibv event */
-		recv_wr.wr_id =     0;                
-		recv_wr.sg_list =   &sge;
-		recv_wr.num_sge =   1;
+    		/* wr_id is used to identify the recv data when get ibv event */
+			recv_wr.wr_id =     0;                
+			recv_wr.sg_list =   &sge;
+			recv_wr.num_sge =   1;
 
-		if (ibv_post_recv(cm_id->qp,&recv_wr,&bad_recv_wr))
-			return 1;
-
-		buf[0] = a;
-		buf[1] = b;
-		buf[0] = htonl(buf[0]);
-		buf[1] = htonl(buf[1]);
-
-		sge.addr 					  = (uintptr_t)buf; 
-		sge.length                    = sizeof(buf);
-		sge.lkey                      = mr->lkey;
-
-		send_wr.wr_id                 = 1;
-		send_wr.opcode                = IBV_WR_RDMA_WRITE;
-    	/* set IBV_SEND_SIGNALED flag will cause an ibv event recv at sender when data transmit from memory to NIC */
-		send_wr.send_flags            = IBV_SEND_SIGNALED;
-		send_wr.sg_list               = &sge;
-		send_wr.num_sge               = 1;
-		send_wr.wr.rdma.rkey          = ntohl(server_pdata.buf_rkey);
-		send_wr.wr.rdma.remote_addr   = bswap_64(server_pdata.buf_va);
-
-		if (ibv_post_send(cm_id->qp,&send_wr,&bad_send_wr))
-			return 1;
-
-		int end_loop = 0;
-		while (!end_loop) {
-			if (ibv_get_cq_event(comp_chan,&evt_cq,&cq_context)){
-				puts("Failed to get cq event.");
+			if (ibv_post_recv(cm_id->qp,&recv_wr,&bad_recv_wr))
 				return 1;
-			}
-			if (ibv_req_notify_cq(cq,0)){
-				puts("Failed to get the notification.");
+
+			buf[0] = a;
+			buf[1] = b;
+			buf[0] = htonl(buf[0]);
+			buf[1] = htonl(buf[1]);
+
+			sge.addr 					  = (uintptr_t)buf; 
+			sge.length                    = sizeof(buf);
+			sge.lkey                      = mr->lkey;
+
+			send_wr.wr_id                 = 1;
+			send_wr.opcode                = IBV_WR_RDMA_WRITE;
+    		/* set IBV_SEND_SIGNALED flag will cause an ibv event recv at sender when data transmit from memory to NIC */
+			send_wr.send_flags            = IBV_SEND_SIGNALED;
+			send_wr.sg_list               = &sge;
+			send_wr.num_sge               = 1;
+			send_wr.wr.rdma.rkey          = ntohl(server_pdata.buf_rkey);
+			send_wr.wr.rdma.remote_addr   = bswap_64(server_pdata.buf_va);
+
+			if (ibv_post_send(cm_id->qp,&send_wr,&bad_send_wr))
 				return 1;
-			}
-			if (ibv_poll_cq(cq,1,&wc) != 1){
-				puts("failed to pull the wc");
-				return 1;
-			}
-			if (wc.status != IBV_WC_SUCCESS){
-				puts("wc received is not sucess.");
-				return 1;
-			}
-			switch (wc.wr_id) {
-				case 0:
-					printf("Sum of both numbers: %d\n", ntohl(buf[0]));
-					end_loop = 1;
-					break;
-				case 1:
-					/* due to server side doesn't know when the IBV_WR_RDMA_WRITE is done,
-			 		* we need to send a notification to tell server side the IBV_WR_RDMA_WRITE is already sent 
-			 		*/
-					if (prepare_send_notify_after_rdma_write(cm_id, pd)){
-						printf("Sending ");
-						return 1;
-					}
-					break;
-				default:
-					printf("ending loop\n");
-					end_loop = 1;
-					break;
+
+			int end_loop = 0;
+			while (!end_loop) {
+				if (ibv_get_cq_event(comp_chan,&evt_cq,&cq_context)){
+					puts("Failed to get cq event.");
+					return 1;
 				}
-    		}
-			ibv_ack_cq_events(cq,2);
-			sleep(12);
+				if (ibv_req_notify_cq(cq,0)){
+					puts("Failed to get the notification.");
+					return 1;
+				}
+				if (ibv_poll_cq(cq,1,&wc) != 1){
+					puts("failed to pull the wc");
+					return 1;
+				}
+				if (wc.status != IBV_WC_SUCCESS){
+					puts("wc received is not success.");
+					return 1;
+				}
+				switch (wc.wr_id) {
+					case 0:
+						printf("Sum of both numbers: %d\n", ntohl(buf[0]));
+						end_loop = 1;
+						break;
+					case 1:
+						/* due to server side doesn't know when the IBV_WR_RDMA_WRITE is done,
+			 			* we need to send a notification to tell server side the IBV_WR_RDMA_WRITE is already sent 
+			 			*/
+						if (prepare_send_notify_after_rdma_write(cm_id, pd)){
+							printf("Sending ");
+							return 1;
+						}
+						break;
+					default:
+						printf("ending loop\n");
+						end_loop = 1;
+						break;
+					}
+    			}
+				ibv_ack_cq_events(cq,2);
+			}
 	}
 	rdma_disconnect(cm_id);
 	err = rdma_get_cm_event(cm_channel,&event);
