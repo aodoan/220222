@@ -99,27 +99,36 @@ int main(int argc, char *argv[])
      * so we should create an event channel first. 
      */
 	cm_channel = rdma_create_event_channel(); 
-	if (!cm_channel)  
+	if (!cm_channel){  
+		puts("Failed to create completion channel. Quitting.");
 		return 1; 
+	}
 
-    /* Like socket fd in socket porgramming, we need to acquire a rdmacm id.
+    /* Like socket fd in socket programming, we need to acquire a rdmacm id.
      */
 	err = rdma_create_id(cm_channel, &cm_id, NULL, RDMA_PS_TCP);
-	if (err)  
+	if (err){
+		puts("Failed to acquire rdmacm id. Quitting.");
 		return err;
+	}
 
     /* Note: port 20000 doesn't equal to the socket port in TCP/IP, 
      * in RoCEv2, all of the packets use port 4791,
      * port 20000 here indicates a higher level abstraction port
      */
 	n = getaddrinfo(argv[1], "20000", &hints, &res);
-	if (n < 0)  
+	if (n < 0){
+		///\todo use any port, stil hardcoded to 20000
+		printf("tcp port specified is being used. quitting.\n");
 		return 1;
+	}
 
 	/* Resolve addr. */
 	err = rdma_resolve_addr(cm_id, NULL, res->ai_addr, RESOLVE_TIMEOUT_MS);
-	if (err)
+	if (err){
+		puts("Could not resolve address.");
 		return err;
+	}
     /* We need to "get" rdmacm event to acquire event occured on NIC. */
 	err = rdma_get_cm_event(cm_channel, &event);
 	if (err)
@@ -265,10 +274,12 @@ int main(int argc, char *argv[])
 			break;
 		case 1:
 			/* due to server side doesn't know when the IBV_WR_RDMA_WRITE is done,
-			 * we need to send a notification to tell server side the IBV_WR_RDMA_WRITE is alreay sent 
+			 * we need to send a notification to tell server side the IBV_WR_RDMA_WRITE is already sent 
 			 */
-			if (prepare_send_notify_after_rdma_write(cm_id, pd))
+			if (prepare_send_notify_after_rdma_write(cm_id, pd)){
+				printf("Sending ");
 				return 1;
+			}
 			break;
 		default:
 			printf("ending loop\n");
