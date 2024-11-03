@@ -150,7 +150,7 @@ int main(int argc, char *argv[])
         printf("starting the loop.\n");
         err = rdma_get_cm_event(cm_channel,&event);
         /* We need to "get" rdmacm event to acquire event occured on NIC. */
-        else if (event->event == RDMA_CM_EVENT_DISCONNECTED) {
+        if (event->event == RDMA_CM_EVENT_DISCONNECTED) {
             printf("The client send an DISCONNECT message!. quitting");
             break;
         }
