@@ -100,7 +100,8 @@ int main(int argc, char *argv[])
      * so we should create an event channel first. 
      */
 	cm_channel = rdma_create_event_channel(); 
-	if (!cm_channel){  
+	if (!cm_channel)
+	{  
 		puts("Failed to create completion channel. Probably you did not set up modprobe (just a guess).");
 		return 1; 
 	}
@@ -108,7 +109,8 @@ int main(int argc, char *argv[])
     /* Like socket fd in socket programming, we need to acquire a rdmacm id.
      */
 	err = rdma_create_id(cm_channel, &cm_id, NULL, RDMA_PS_TCP);
-	if (err){
+	if (err)
+	{
 		puts("Failed to acquire rdmacm id. Quitting.");
 		return err;
 	}
@@ -139,15 +141,18 @@ int main(int argc, char *argv[])
 	err = rdma_get_cm_event(cm_channel, &event);
 	if (err)
 	{
-		printf("error while resolvin the address.\n");
+		puts("could not get cm event");
 		return err;
 	}
-
 	if (event->event != RDMA_CM_EVENT_ADDR_RESOLVED)
 	{
-		printf("event obtained is not an addr resolved. event = %d\n", event->event);
+		printf("Expected event: %s, got: %s",
+		get_rdma_event(RDMA_CM_EVENT_ADDR_RESOLVED),
+		get_rdma_event(event->event));
 		return 1;
 	}
+	// For what I understand, this ack does not envolve
+	// the other side of communication. 
     /* Each rdmacm event should be acked. */
 	rdma_ack_cm_event(event);
 
