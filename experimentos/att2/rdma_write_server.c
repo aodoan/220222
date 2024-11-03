@@ -135,18 +135,21 @@ int main(int argc, char *argv[])
     if (err)
         return 1;
 
+    err = rdma_get_cm_event(cm_channel,&event);
+    if (err)
+        return err;
+
+    if (event->event != RDMA_CM_EVENT_CONNECT_REQUEST)
+    {
+        printf("First message of the client was not an connection request! Aborting conneciton.\n");
+        return 1;
+    }
+    // Ack the first message received
+    rdma_ack_cm_event(event);
     while(1) {
         printf("starting the loop.\n");
-        /* We need to "get" rdmacm event to acquire event occured on NIC. */
         err = rdma_get_cm_event(cm_channel,&event);
-        if (err)
-            return err;
-
-        if (event->event != RDMA_CM_EVENT_CONNECT_REQUEST)
-        {
-            printf("First message of the client was not an connection request! Aborting conneciton.\n");
-            return 1;
-        }
+        /* We need to "get" rdmacm event to acquire event occured on NIC. */
         else if (event->event == RDMA_CM_EVENT_DISCONNECTED) {
             printf("The client send an DISCONNECT message!. quitting");
             break;
