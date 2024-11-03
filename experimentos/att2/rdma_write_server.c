@@ -19,7 +19,7 @@
 
 #include <byteswap.h>
 #include <rdma/rdma_cma.h> 
-
+#include "utils.h"
 enum { 
     RESOLVE_TIMEOUT_MS = 5000,
 };
@@ -95,7 +95,7 @@ int main(int argc, char *argv[])
     struct sockaddr_in          sin;
     uint32_t                    *buf;
     int                         err;
-     
+
     /* We use rdmacm lib to establish rdma connection and ibv lib to write, read, send, receive data here. */
 
     /* In RDMA programming, transmission is an "asychronize" procedure, all the "events" were generated on NIC. 
@@ -107,14 +107,19 @@ int main(int argc, char *argv[])
      */
     cm_channel = rdma_create_event_channel();
     if (!cm_channel) 
+    {
+        puts("Could not create event channel. You may not have the necessary RDMA set.");
         return 1;
+    }
 
     /* Like socket fd in socket porgramming, we need to acquire a rdmacm id.
      */
     err = rdma_create_id(cm_channel,&listen_id,NULL,RDMA_PS_TCP); 
     if (err) 
+    {
+        puts("error while acquiring rdmacm id.");
         return err;
-
+    }
     /* Note: port 20000 doesn't equal to the socket port in TCP/IP, 
      * in RoCEv2, all of the packets use port 4791,
      * port 20000 here indicates a higher level abstraction port
@@ -131,7 +136,9 @@ int main(int argc, char *argv[])
     printf("waiting for connection.\n");
     err = rdma_bind_addr(listen_id,(struct sockaddr *)&sin);
     if (err) 
+    {
         return 1;
+    } 
     err = rdma_listen(listen_id,1);
     if (err)
         return 1;
@@ -142,19 +149,23 @@ int main(int argc, char *argv[])
 
     if (event->event != RDMA_CM_EVENT_CONNECT_REQUEST)
     {
-        printf("First message of the client was not an connection request! Aborting conneciton.\n");
+        //printf("First message of the client was not an connection request! Aborting conneciton.\n");
+        printf("Cannot proceed. Expected %s, got: %s\n", 
+        get_rdma_event(RDMA_CM_EVENT_CONNECT_REQUEST), get_rdma_event(event->event));
         return 1;
     }
     // Ack the first message received
     cm_id = event->id;
     rdma_ack_cm_event(event);
     printf("Connection established.\n");
-    while(1) {
+    while(1) 
+    {
         printf("starting the loop.\n");
         err = rdma_get_cm_event(cm_channel,&event);
         /* We need to "get" rdmacm event to acquire event occured on NIC. */
-        if (event->event == RDMA_CM_EVENT_DISCONNECTED) {
-            printf("The client send an DISCONNECT message!. quitting");
+        if (event->event == RDMA_CM_EVENT_DISCONNECTED) 
+        {
+            printf("Got an %s, quitting!", get_rdma_event(event->event));
             break;
         }
         cm_id = event->id;
@@ -170,12 +181,18 @@ int main(int argc, char *argv[])
          */
         pd = ibv_alloc_pd(cm_id->verbs);
         if (!pd) 
+        {
+            puts("error when allocating protection domain. quitting");
             return 1;
+        }
 
         /* A completion event channel like rdma_create_event_channel in libibverbs */
         comp_chan = ibv_create_comp_channel(cm_id->verbs);
         if (!comp_chan)
+        {
+            puts("Error while creating completion channel.");
             return 1;
+        }
 
         /* create a completion queue, a cq contains a completion work request. 
          * All the events about NIC, transmission will be in the cq 
@@ -183,13 +200,18 @@ int main(int argc, char *argv[])
          */
         cq = ibv_create_cq(cm_id->verbs,1,NULL,comp_chan,0); 
         if (!cq)
+        {
+            puts("Erro while creating completion queue");
             return 1;
-
-        /* Requests create compiletion notification when any work completion is add to the cq,
+        }
+        /* Requests create completion notification when any work completion is add to the cq,
          * therefore work completion can be "get" by using ibv_get_cq_event() 
          */
         if (ibv_req_notify_cq(cq,0))
+        {
+            puts("could not fetch notifications on the completion queue, quitting.");
             return 1;
+        }
 
         buf = calloc(2,sizeof(uint32_t));
         if (!buf) 
@@ -201,8 +223,10 @@ int main(int argc, char *argv[])
             IBV_ACCESS_REMOTE_READ | 
             IBV_ACCESS_REMOTE_WRITE); 
         if (!mr) 
+        {
+            puts("memory region could not be registered. qutting");
             return 1;
-        
+        } 
         memset(&qp_attr,0,sizeof(qp_attr));
         qp_attr.cap.max_send_wr = 1;
         qp_attr.cap.max_send_sge = 1;
@@ -238,7 +262,13 @@ int main(int argc, char *argv[])
         if (err) 
             return err;
         if (event->event != RDMA_CM_EVENT_ESTABLISHED)
+        {
+            printf("Expected event: %s, got: %s\n",
+            get_rdma_event(RDMA_CM_EVENT_ESTABLISHED),
+            get_rdma_event(event->event));
+
             return 1;
+        }
         rdma_ack_cm_event(event);
 
         /* we need to check IBV_WR_RDMA_WRITE is done, so we post_recv at first */
@@ -277,8 +307,10 @@ int main(int argc, char *argv[])
 		if (ibv_poll_cq(cq,1,&wc) != 1)
 			return 1;
 		if (wc.status != IBV_WC_SUCCESS)
+        {
+            puts("Work completion was not successful.");
 			return 1;
-
+        }
         printf("Status of event: %d\n", wc.status);
 
     }

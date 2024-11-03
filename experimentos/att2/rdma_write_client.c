@@ -23,7 +23,7 @@
 #include <arpa/inet.h>
 #include <byteswap.h>
 #include <rdma/rdma_cma.h>
-
+#include "utils.h"
 enum { 
     RESOLVE_TIMEOUT_MS = 5000, 
 }; 
@@ -112,15 +112,16 @@ int main(int argc, char *argv[])
 		puts("Failed to acquire rdmacm id. Quitting.");
 		return err;
 	}
-	// The next line is not really true when talking about iWarp.
+	// The next line is not true when talking about iWarp.
 	// RoCEv2 uses UDP port 4791 indeed, but iWarp can use any port 
-	// Using nmap while running the server, will be at port tcp 20000
+	// if you use nmap while running the server, will be at port tcp 20000
     /* Note: port 20000 doesn't equal to the socket port in TCP/IP, 
      * in RoCEv2, all of the packets use port 4791,
      * port 20000 here indicates a higher level abstraction port
      */
 	n = getaddrinfo(argv[1], "20000", &hints, &res);
-	if (n < 0){
+	if (n < 0)
+	{
 		///\todo use any port, stil hardcoded to 20000
 		printf("tcp port specified is being used. quitting.\n");
 		return 1;
@@ -128,7 +129,8 @@ int main(int argc, char *argv[])
 
 	/* Resolve addr. */
 	err = rdma_resolve_addr(cm_id, NULL, res->ai_addr, RESOLVE_TIMEOUT_MS);
-	if (err){
+	if (err)
+	{
 		puts("Could not resolve address.");
 		return err;
 	}
@@ -140,6 +142,7 @@ int main(int argc, char *argv[])
 		printf("error while resolvin the address.\n");
 		return err;
 	}
+
 	if (event->event != RDMA_CM_EVENT_ADDR_RESOLVED)
 	{
 		printf("event obtained is not an addr resolved. event = %d\n", event->event);
