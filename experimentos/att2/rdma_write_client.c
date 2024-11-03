@@ -208,11 +208,15 @@ int main(int argc, char *argv[])
 
 	err = rdma_get_cm_event(cm_channel,&event);
 	if (err)
+	{
+		printf("an error ocurred while connecting (timeout i think)\n");
 		return err;
-
-	if (event->event != RDMA_CM_EVENT_ESTABLISHED)
+	}
+	else if (event->event != RDMA_CM_EVENT_ESTABLISHED)
+	{
+		printf("the event received is not an RDMA_CM_EVENT_ESTABLISHED. The server is doing nonsense.\n");
 		return 1;
-
+	}
     /* event->param.conn.private_data includes the memory info at server */
 	memcpy(&server_pdata,event->param.conn.private_data,sizeof(server_pdata));
 	// Ack that the connection was established. now we assume that an connection exists
