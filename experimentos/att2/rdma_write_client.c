@@ -217,11 +217,11 @@ int main(int argc, char *argv[])
 	// Ack that the connection was established. now we assume that an connection exists
 	rdma_ack_cm_event(event);
 	int sentinel = 1;
-	int a,b;
+	long int a,b;
 	while(sentinel)
 	{
 		printf("Enter two numbers: ");
-		scanf("%d %d", &a, &b);
+		scanf("%li %li", &a, &b);
 		/* We prepare ibv_post_recv() first */
 		sge.addr = (uintptr_t)buf; 
 		sge.length = sizeof(uint32_t);
@@ -235,8 +235,8 @@ int main(int argc, char *argv[])
 		if (ibv_post_recv(cm_id->qp,&recv_wr,&bad_recv_wr))
 			return 1;
 
-		buf[0] = strtoul(a,NULL,0);
-		buf[1] = strtoul(b,NULL,0);
+		buf[0] = a;
+		buf[1] = b;
 		buf[0] = htonl(buf[0]);
 		buf[1] = htonl(buf[1]);
 
