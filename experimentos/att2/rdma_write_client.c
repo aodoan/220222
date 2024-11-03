@@ -100,7 +100,7 @@ int main(int argc, char *argv[])
      */
 	cm_channel = rdma_create_event_channel(); 
 	if (!cm_channel){  
-		puts("Failed to create completion channel. Quitting.");
+		puts("Failed to create completion channel. Probably you did not set up modprobe (just a guess).");
 		return 1; 
 	}
 
@@ -111,7 +111,9 @@ int main(int argc, char *argv[])
 		puts("Failed to acquire rdmacm id. Quitting.");
 		return err;
 	}
-
+	// The next line is not really true when talking about iWarp.
+	// RoCEv2 uses UDP port 4791 indeed, but iWarp can use any port 
+	// Using nmap while running the server, will be at port tcp 20000
     /* Note: port 20000 doesn't equal to the socket port in TCP/IP, 
      * in RoCEv2, all of the packets use port 4791,
      * port 20000 here indicates a higher level abstraction port
@@ -209,85 +211,92 @@ int main(int argc, char *argv[])
 
 	if (event->event != RDMA_CM_EVENT_ESTABLISHED)
 		return 1;
+
     /* event->param.conn.private_data includes the memory info at server */
 	memcpy(&server_pdata,event->param.conn.private_data,sizeof(server_pdata));
+	// Ack that the connection was established. now we assume that an connection exists
 	rdma_ack_cm_event(event);
+	int sentinel = 1;
+	int a,b;
+	while(sentinel)
+	{
+		printf("Enter two numbers: ");
+		scanf("%d %d", &a, &b);
+		/* We prepare ibv_post_recv() first */
+		sge.addr = (uintptr_t)buf; 
+		sge.length = sizeof(uint32_t);
+		sge.lkey = mr->lkey;
 
-	/* We prepare ibv_post_recv() first */
+    	/* wr_id is used to identify the recv data when get ibv event */
+		recv_wr.wr_id =     0;                
+		recv_wr.sg_list =   &sge;
+		recv_wr.num_sge =   1;
 
-	sge.addr = (uintptr_t)buf; 
-	sge.length = sizeof(uint32_t);
-	sge.lkey = mr->lkey;
-
-    /* wr_id is used to identify the recv data when get ibv event */
-	recv_wr.wr_id =     0;                
-	recv_wr.sg_list =   &sge;
-	recv_wr.num_sge =   1;
-
-	if (ibv_post_recv(cm_id->qp,&recv_wr,&bad_recv_wr))
-		return 1;
-
-	buf[0] = strtoul(argv[2],NULL,0);
-	buf[1] = strtoul(argv[3],NULL,0);
-	buf[0] = htonl(buf[0]);
-	buf[1] = htonl(buf[1]);
-
-	sge.addr 					  = (uintptr_t)buf; 
-	sge.length                    = sizeof(buf);
-	sge.lkey                      = mr->lkey;
-
-	send_wr.wr_id                 = 1;
-	send_wr.opcode                = IBV_WR_RDMA_WRITE;
-    /* set IBV_SEND_SIGNALED flag will cause an ibv event recv at sender when data transmit from memory to NIC */
-	send_wr.send_flags            = IBV_SEND_SIGNALED;
-	send_wr.sg_list               = &sge;
-	send_wr.num_sge               = 1;
-	send_wr.wr.rdma.rkey          = ntohl(server_pdata.buf_rkey);
-	send_wr.wr.rdma.remote_addr   = bswap_64(server_pdata.buf_va);
-
-	if (ibv_post_send(cm_id->qp,&send_wr,&bad_send_wr))
-		return 1;
-
-	int end_loop = 0;
-	while (!end_loop) {
-		if (ibv_get_cq_event(comp_chan,&evt_cq,&cq_context)){
-			puts("Failed to get cq event.");
+		if (ibv_post_recv(cm_id->qp,&recv_wr,&bad_recv_wr))
 			return 1;
-		}
-		if (ibv_req_notify_cq(cq,0)){
-			puts("Failed to get the notification.");
+
+		buf[0] = strtoul(a,NULL,0);
+		buf[1] = strtoul(b,NULL,0);
+		buf[0] = htonl(buf[0]);
+		buf[1] = htonl(buf[1]);
+
+		sge.addr 					  = (uintptr_t)buf; 
+		sge.length                    = sizeof(buf);
+		sge.lkey                      = mr->lkey;
+
+		send_wr.wr_id                 = 1;
+		send_wr.opcode                = IBV_WR_RDMA_WRITE;
+    	/* set IBV_SEND_SIGNALED flag will cause an ibv event recv at sender when data transmit from memory to NIC */
+		send_wr.send_flags            = IBV_SEND_SIGNALED;
+		send_wr.sg_list               = &sge;
+		send_wr.num_sge               = 1;
+		send_wr.wr.rdma.rkey          = ntohl(server_pdata.buf_rkey);
+		send_wr.wr.rdma.remote_addr   = bswap_64(server_pdata.buf_va);
+
+		if (ibv_post_send(cm_id->qp,&send_wr,&bad_send_wr))
 			return 1;
-		}
-		if (ibv_poll_cq(cq,1,&wc) != 1){
-			puts("failed to pull the wc");
-			return 1;
-		}
-		if (wc.status != IBV_WC_SUCCESS){
-			puts("wc received is not sucess.");
-			return 1;
-		}
-		printf("passing here\n");
-		switch (wc.wr_id) {
-		case 0:
-			printf("Sum of both numbers: %d\n", ntohl(buf[0]));
-			end_loop = 1;
-			break;
-		case 1:
-			/* due to server side doesn't know when the IBV_WR_RDMA_WRITE is done,
-			 * we need to send a notification to tell server side the IBV_WR_RDMA_WRITE is already sent 
-			 */
-			if (prepare_send_notify_after_rdma_write(cm_id, pd)){
-				printf("Sending ");
+
+		int end_loop = 0;
+		while (!end_loop) {
+			if (ibv_get_cq_event(comp_chan,&evt_cq,&cq_context)){
+				puts("Failed to get cq event.");
 				return 1;
 			}
-			break;
-		default:
-			printf("ending loop\n");
-			end_loop = 1;
-			break;
-		}
-    }
-	ibv_ack_cq_events(cq,2);
+			if (ibv_req_notify_cq(cq,0)){
+				puts("Failed to get the notification.");
+				return 1;
+			}
+			if (ibv_poll_cq(cq,1,&wc) != 1){
+				puts("failed to pull the wc");
+				return 1;
+			}
+			if (wc.status != IBV_WC_SUCCESS){
+				puts("wc received is not sucess.");
+				return 1;
+			}
+			switch (wc.wr_id) {
+				case 0:
+					printf("Sum of both numbers: %d\n", ntohl(buf[0]));
+					end_loop = 1;
+					break;
+				case 1:
+					/* due to server side doesn't know when the IBV_WR_RDMA_WRITE is done,
+			 		* we need to send a notification to tell server side the IBV_WR_RDMA_WRITE is already sent 
+			 		*/
+					if (prepare_send_notify_after_rdma_write(cm_id, pd)){
+						printf("Sending ");
+						return 1;
+					}
+					break;
+				default:
+					printf("ending loop\n");
+					end_loop = 1;
+					break;
+				}
+    		}
+			ibv_ack_cq_events(cq,2);
+			sleep(12);
+	}
 	rdma_disconnect(cm_id);
 	err = rdma_get_cm_event(cm_channel,&event);
 	if (err)
