@@ -132,12 +132,19 @@ int main(int argc, char *argv[])
 		puts("Could not resolve address.");
 		return err;
 	}
+
     /* We need to "get" rdmacm event to acquire event occured on NIC. */
 	err = rdma_get_cm_event(cm_channel, &event);
 	if (err)
+	{
+		printf("error while resolvin the address.\n");
 		return err;
+	}
 	if (event->event != RDMA_CM_EVENT_ADDR_RESOLVED)
+	{
+		printf("event obtained is not an addr resolved. event = %d\n", event->event);
 		return 1;
+	}
     /* Each rdmacm event should be acked. */
 	rdma_ack_cm_event(event);
 
@@ -209,12 +216,12 @@ int main(int argc, char *argv[])
 	err = rdma_get_cm_event(cm_channel,&event);
 	if (err)
 	{
-		printf("an error ocurred while connecting (timeout i think)\n");
+		printf("an error ocurred while connecting\n");
 		return err;
 	}
 	else if (event->event != RDMA_CM_EVENT_ESTABLISHED)
 	{
-		printf("the event received is not an RDMA_CM_EVENT_ESTABLISHED. The server is doing nonsense.\n");
+		printf("the event received is not an RDMA_CM_EVENT_ESTABLISHED. %d\n", event->event);
 		return 1;
 	}
     /* event->param.conn.private_data includes the memory info at server */
