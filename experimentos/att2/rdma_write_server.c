@@ -298,10 +298,10 @@ int main(int argc, char *argv[])
             printf("error while getting rdma_get_cm_event: %d", err);
             return err;
         }
-        if (event->event != RDMA_CM_EVENT_CONNECT_REQUEST)
+        if (event->event == RDMA_CM_EVENT_DISCONNECTED)
         {
-            printf("not an connection request.\n");
-            return 1;
+            printf("the client wants to terminate connection!.\n");
+            break;
         }
 
         cm_id = event->id;
