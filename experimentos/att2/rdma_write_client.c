@@ -242,7 +242,7 @@ int main(int argc, char *argv[])
 	while(sentinel)
 	{
 		printf("Enter two numbers: ");
-		scanf("%li %li", &a, &b);
+		a = 2; b = 3;
 		if (a == 0 && b == 0)
 		{
 			sentinel = 0;
