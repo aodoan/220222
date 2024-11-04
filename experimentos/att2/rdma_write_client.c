@@ -271,7 +271,7 @@ int main(int argc, char *argv[])
 			buf[0] = htonl(buf[0]);
 			buf[1] = htonl(buf[1]);
 			*/
-			for(long int i = 0; i < BUFISZE; i++)
+			for(long int i = 0; i < BUFSIZE; i++)
 			{
 				buf[i] =  htonl(i+a);
 			}
