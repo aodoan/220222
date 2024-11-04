@@ -229,7 +229,11 @@ int main(int argc, char *argv[])
 	}
 	if (event->event != RDMA_CM_EVENT_ESTABLISHED)
 	{
-		printf("the event received is not an RDMA_CM_EVENT_ESTABLISHED. %d\n", event->event);
+		//printf("the event received is not an RDMA_CM_EVENT_ESTABLISHED. %d\n", event->event);
+		printf("Expected event: %s, got: %s\n", 
+			get_rdma_event(RDMA_CM_EVENT_ESTABLISHED),
+			get_rdma_event(event->event));
+
 		return 1;
 	}
     /* event->param.conn.private_data includes the memory info at server */
@@ -242,7 +246,7 @@ int main(int argc, char *argv[])
 	while(sentinel)
 	{
 		printf("Enter two numbers: ");
-		scanf("%d %d", &a, &b);
+		scanf("%ld %ld", &a, &b);
 		if (a == 0 && b == 0)
 		{
 			sentinel = 0;
