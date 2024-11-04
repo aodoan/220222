@@ -156,7 +156,7 @@ int main(int argc, char *argv[])
     }
     // Ack the first message received
     cm_id = event->id;
-    rdma_ack_cm_event(event);
+    //rdma_ack_cm_event(event);
     printf("Connection established.\n");
     while(1) 
     {

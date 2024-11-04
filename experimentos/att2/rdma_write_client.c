@@ -25,7 +25,7 @@
 #include <rdma/rdma_cma.h>
 #include "utils.h"
 enum { 
-    RESOLVE_TIMEOUT_MS = 5000, 
+    RESOLVE_TIMEOUT_MS = 500, 
 }; 
 struct pdata { 
     uint64_t	buf_va; 
@@ -227,7 +227,7 @@ int main(int argc, char *argv[])
 		printf("an error ocurred while connecting\n");
 		return err;
 	}
-	else if (event->event != RDMA_CM_EVENT_ESTABLISHED)
+	if (event->event != RDMA_CM_EVENT_ESTABLISHED)
 	{
 		printf("the event received is not an RDMA_CM_EVENT_ESTABLISHED. %d\n", event->event);
 		return 1;
