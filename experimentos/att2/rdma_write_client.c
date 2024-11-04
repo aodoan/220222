@@ -195,7 +195,7 @@ int main(int argc, char *argv[])
 	if (!buf) 
 		return 1;
     /* register a memory region with a specific pd */
-	mr = ibv_reg_mr(pd, buf,2 * sizeof(uint32_t), IBV_ACCESS_LOCAL_WRITE); 
+	mr = ibv_reg_mr(pd, buf,BUFSIZE * sizeof(uint32_t), IBV_ACCESS_LOCAL_WRITE); 
 	if (!mr) 
 		return 1;
 
