@@ -121,7 +121,7 @@ int main(int argc, char *argv[])
      * in RoCEv2, all of the packets use port 4791,
      * port 20000 here indicates a higher level abstraction port
      */
-	n = getaddrinfo(argv[1], "20000", &hints, &res);
+	n = getaddrinfo(argv[1], "9191", &hints, &res);
 	if (n < 0)
 	{
 		///\todo use any port, stil hardcoded to 20000
@@ -242,7 +242,7 @@ int main(int argc, char *argv[])
 	while(sentinel)
 	{
 		printf("Enter two numbers: ");
-		a = 2; b = 3;
+		scanf("%d %d", &a, &b);
 		if (a == 0 && b == 0)
 		{
 			sentinel = 0;

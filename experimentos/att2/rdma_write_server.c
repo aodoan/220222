@@ -120,12 +120,12 @@ int main(int argc, char *argv[])
         puts("error while acquiring rdmacm id.");
         return err;
     }
-    /* Note: port 20000 doesn't equal to the socket port in TCP/IP, 
+    /* Note: port 9191 doesn't equal to the socket port in TCP/IP, 
      * in RoCEv2, all of the packets use port 4791,
-     * port 20000 here indicates a higher level abstraction port
+     * port 9191 here indicates a higher level abstraction port
      */
     sin.sin_family = AF_INET; 
-    sin.sin_port = htons(20000);
+    sin.sin_port = htons(9191);
     sin.sin_addr.s_addr = INADDR_ANY;
 
     
