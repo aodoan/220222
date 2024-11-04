@@ -230,7 +230,7 @@ int main(int argc, char *argv[])
         return 1;
 
     /* register a memory region with a specific pd */
-    mr = ibv_reg_mr(pd,buf,2*sizeof(uint32_t), 
+    mr = ibv_reg_mr(pd,buf,BUFSIZE*sizeof(uint32_t), 
         IBV_ACCESS_LOCAL_WRITE | 
         IBV_ACCESS_REMOTE_READ | 
         IBV_ACCESS_REMOTE_WRITE); 
