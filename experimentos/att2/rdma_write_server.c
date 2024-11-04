@@ -142,7 +142,7 @@ int main(int argc, char *argv[])
     err = rdma_listen(listen_id,1);
     if (err)
         return 1;
-
+    /*
     err = rdma_get_cm_event(cm_channel,&event);
     if (err)
         return err;
@@ -159,16 +159,30 @@ int main(int argc, char *argv[])
     int ret = rdma_ack_cm_event(event);
     printf("return of rdma_ack_cm_event -> %d\n", ret);
     printf("Connection established.\n");
+    */
     while(1) 
     {
         printf("starting the loop.\n");
         err = rdma_get_cm_event(cm_channel,&event);
         /* We need to "get" rdmacm event to acquire event occured on NIC. */
+        /*
         if (event->event == RDMA_CM_EVENT_DISCONNECTED) 
         {
             printf("Got an %s, quitting!", get_rdma_event(event->event));
             break;
         }
+        */
+        if(err)
+        {
+            printf("error while getting rdma_get_cm_event: %d", err);
+            return err;
+        }
+        if (event->event != RDMA_CM_EVENT_CONNECT_REQUEST)
+        {
+            printf("not an connection request.\n");
+            return 1;
+        }
+
         cm_id = event->id;
         /* Each rdmacm event should be acked. */
         rdma_ack_cm_event(event);
