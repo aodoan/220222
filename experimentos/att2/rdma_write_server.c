@@ -225,7 +225,7 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    buf = calloc(2,sizeof(uint32_t));
+    buf = calloc(BUFSIZE, sizeof(uint32_t));
     if (!buf) 
         return 1;
 

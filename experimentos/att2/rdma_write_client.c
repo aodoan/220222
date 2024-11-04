@@ -191,7 +191,7 @@ int main(int argc, char *argv[])
 	if (ibv_req_notify_cq(cq,0))
 		return 1;
 
-	buf = calloc(2,sizeof(uint32_t)); 
+	buf = calloc(BUFSIZE ,sizeof(uint32_t)); 
 	if (!buf) 
 		return 1;
     /* register a memory region with a specific pd */
@@ -245,9 +245,9 @@ int main(int argc, char *argv[])
 	printf("0 0 to quit!\n");
 	while(sentinel)
 	{
-		printf("Enter two numbers: ");
-		scanf("%ld %ld", &a, &b);
-		if (a == 0 && b == 0)
+		printf("Enter the first number: ");
+		scanf("%ld", &a);
+		if (a == -1)
 		{
 			sentinel = 0;
 		}
@@ -265,12 +265,16 @@ int main(int argc, char *argv[])
 
 			if (ibv_post_recv(cm_id->qp,&recv_wr,&bad_recv_wr))
 				return 1;
-
+			/*
 			buf[0] = a;
 			buf[1] = b;
 			buf[0] = htonl(buf[0]);
 			buf[1] = htonl(buf[1]);
-
+			*/
+			for(long int i = 0; i < BUFISZE; i++)
+			{
+				buf[i] =  htonl(i+a);
+			}
 			sge.addr 					  = (uintptr_t)buf; 
 			sge.length                    = sizeof(buf);
 			sge.lkey                      = mr->lkey;
@@ -307,7 +311,7 @@ int main(int argc, char *argv[])
 				}
 				switch (wc.wr_id) {
 					case 0:
-						printf("Sum of both numbers: %d\n", ntohl(buf[0]));
+						printf("all good!");
 						end_loop = 1;
 						break;
 					case 1:
