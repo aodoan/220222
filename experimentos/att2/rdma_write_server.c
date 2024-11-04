@@ -161,14 +161,14 @@ int main(int argc, char *argv[])
     printf("Connection established.\n");
     */
     err = rdma_get_cm_event(cm_channel,&event);
-        /* We need to "get" rdmacm event to acquire event occured on NIC. */
-        /*
-        if (event->event == RDMA_CM_EVENT_DISCONNECTED) 
-        {
-            printf("Got an %s, quitting!", get_rdma_event(event->event));
-            break;
-        }
-        */
+    /* We need to "get" rdmacm event to acquire event occured on NIC. */
+    /*
+    if (event->event == RDMA_CM_EVENT_DISCONNECTED) 
+    {
+        printf("Got an %s, quitting!", get_rdma_event(event->event));
+        break;
+    }
+    */
     if(err)
     {
         printf("error while getting rdma_get_cm_event: %d", err);
@@ -183,132 +183,110 @@ int main(int argc, char *argv[])
     cm_id = event->id;
     /* Each rdmacm event should be acked. */
     rdma_ack_cm_event(event);
+
+    /* Create verbs objects now that we know which device to use */
+        
+    /* Allocate protection domain, each pd can be used to create queue pair, 
+        * register memory regien, etc.
+        * Each pd is a protection of a group of objects, 
+        * it means you can't use these objects between different pd.
+        */
+    pd = ibv_alloc_pd(cm_id->verbs);
+    if (!pd) 
+    {
+        puts("error when allocating protection domain. quitting");
+        return 1;
+    }
+
+    /* A completion event channel like rdma_create_event_channel in libibverbs */
+    comp_chan = ibv_create_comp_channel(cm_id->verbs);
+    if (!comp_chan)
+    {
+        puts("Error while creating completion channel.");
+        return 1;
+    }
+
+    /* create a completion queue, a cq contains a completion work request. 
+        * All the events about NIC, transmission will be in the cq 
+        * Since libibverbs is thread-safe, use multiple cqs to 1 or many completion channels is avaliable.
+        */
+    cq = ibv_create_cq(cm_id->verbs,1,NULL,comp_chan,0); 
+    if (!cq)
+    {
+        puts("Erro while creating completion queue");
+        return 1;
+    }
+    /* Requests create completion notification when any work completion is add to the cq,
+        * therefore work completion can be "get" by using ibv_get_cq_event() 
+        */
+    if (ibv_req_notify_cq(cq,0))
+    {
+        puts("could not fetch notifications on the completion queue, quitting.");
+        return 1;
+    }
+
+    buf = calloc(2,sizeof(uint32_t));
+    if (!buf) 
+        return 1;
+
+    /* register a memory region with a specific pd */
+    mr = ibv_reg_mr(pd,buf,2*sizeof(uint32_t), 
+        IBV_ACCESS_LOCAL_WRITE | 
+        IBV_ACCESS_REMOTE_READ | 
+        IBV_ACCESS_REMOTE_WRITE); 
+    if (!mr) 
+    {
+        puts("memory region could not be registered. qutting");
+        return 1;
+    } 
+    memset(&qp_attr,0,sizeof(qp_attr));
+    qp_attr.cap.max_send_wr = 1;
+    qp_attr.cap.max_send_sge = 1;
+    qp_attr.cap.max_recv_wr = 1;
+    qp_attr.cap.max_recv_sge = 1;
+
+    qp_attr.send_cq = cq;
+    qp_attr.recv_cq = cq;
+
+    qp_attr.qp_type = IBV_QPT_RC;
+    /* create a queue pair, a qp is for post send/receive.
+        * If pd is NULL, rdma_create_qp will use default pd on RDMA device
+        */
+    err = rdma_create_qp(cm_id,pd,&qp_attr); 
+    if (err) {
+	    perror("rdma cm create qp error");
+        return err;
+	}
+    rep_pdata.buf_va = bswap_64((uintptr_t)buf); 
+    /* we need to prepare remote key to give to client */
+    rep_pdata.buf_rkey = htonl(mr->rkey); 
+	conn_param.responder_resources = 1;  
+    conn_param.private_data = &rep_pdata; 
+    conn_param.private_data_len = sizeof(rep_pdata);
+
+    /* Accept connection, at this point, server will send the mr info and buffer addr to client to let client directly write data to it,
+        * our example here is rep_pdata and conn_param
+        */
+    err = rdma_accept(cm_id,&conn_param); 
+    if (err) 
+        return 1;
+    err = rdma_get_cm_event(cm_channel,&event);
+    if (err) 
+        return err;
+    if (event->event != RDMA_CM_EVENT_ESTABLISHED)
+    {
+        printf("Expected event: %s, got: %s\n",
+        get_rdma_event(RDMA_CM_EVENT_ESTABLISHED),
+        get_rdma_event(event->event));
+
+        return 1;
+    }
+    rdma_ack_cm_event(event);
     while(1) 
     {
         printf("starting the loop.\n");
-        err = rdma_get_cm_event(cm_channel,&event);
-        /* We need to "get" rdmacm event to acquire event occured on NIC. */
         /*
-        if (event->event == RDMA_CM_EVENT_DISCONNECTED) 
-        {
-            printf("Got an %s, quitting!", get_rdma_event(event->event));
-            break;
-        }
         */
-        if(err)
-        {
-            printf("error while getting rdma_get_cm_event: %d", err);
-            return err;
-        }
-        if (event->event != RDMA_CM_EVENT_CONNECT_REQUEST)
-        {
-            printf("not an connection request.\n");
-            return 1;
-        }
-
-        cm_id = event->id;
-        /* Each rdmacm event should be acked. */
-        rdma_ack_cm_event(event);
-
-        /* Create verbs objects now that we know which device to use */
-        
-        /* Allocate protection domain, each pd can be used to create queue pair, 
-         * register memory regien, etc.
-         * Each pd is a protection of a group of objects, 
-         * it means you can't use these objects between different pd.
-         */
-        pd = ibv_alloc_pd(cm_id->verbs);
-        if (!pd) 
-        {
-            puts("error when allocating protection domain. quitting");
-            return 1;
-        }
-
-        /* A completion event channel like rdma_create_event_channel in libibverbs */
-        comp_chan = ibv_create_comp_channel(cm_id->verbs);
-        if (!comp_chan)
-        {
-            puts("Error while creating completion channel.");
-            return 1;
-        }
-
-        /* create a completion queue, a cq contains a completion work request. 
-         * All the events about NIC, transmission will be in the cq 
-         * Since libibverbs is thread-safe, use multiple cqs to 1 or many completion channels is avaliable.
-         */
-        cq = ibv_create_cq(cm_id->verbs,1,NULL,comp_chan,0); 
-        if (!cq)
-        {
-            puts("Erro while creating completion queue");
-            return 1;
-        }
-        /* Requests create completion notification when any work completion is add to the cq,
-         * therefore work completion can be "get" by using ibv_get_cq_event() 
-         */
-        if (ibv_req_notify_cq(cq,0))
-        {
-            puts("could not fetch notifications on the completion queue, quitting.");
-            return 1;
-        }
-
-        buf = calloc(2,sizeof(uint32_t));
-        if (!buf) 
-            return 1;
-
-        /* register a memory region with a specific pd */
-        mr = ibv_reg_mr(pd,buf,2*sizeof(uint32_t), 
-            IBV_ACCESS_LOCAL_WRITE | 
-            IBV_ACCESS_REMOTE_READ | 
-            IBV_ACCESS_REMOTE_WRITE); 
-        if (!mr) 
-        {
-            puts("memory region could not be registered. qutting");
-            return 1;
-        } 
-        memset(&qp_attr,0,sizeof(qp_attr));
-        qp_attr.cap.max_send_wr = 1;
-        qp_attr.cap.max_send_sge = 1;
-        qp_attr.cap.max_recv_wr = 1;
-        qp_attr.cap.max_recv_sge = 1;
-
-        qp_attr.send_cq = cq;
-        qp_attr.recv_cq = cq;
-
-        qp_attr.qp_type = IBV_QPT_RC;
-        /* create a queue pair, a qp is for post send/receive.
-         * If pd is NULL, rdma_create_qp will use default pd on RDMA device
-         */
-        err = rdma_create_qp(cm_id,pd,&qp_attr); 
-        if (err) {
-	        perror("rdma cm create qp error");
-            return err;
-	    }
-        rep_pdata.buf_va = bswap_64((uintptr_t)buf); 
-        /* we need to prepare remote key to give to client */
-        rep_pdata.buf_rkey = htonl(mr->rkey); 
-	    conn_param.responder_resources = 1;  
-        conn_param.private_data = &rep_pdata; 
-        conn_param.private_data_len = sizeof(rep_pdata);
-
-        /* Accept connection, at this point, server will send the mr info and buffer addr to client to let client directly write data to it,
-         * our example here is rep_pdata and conn_param
-         */
-        err = rdma_accept(cm_id,&conn_param); 
-        if (err) 
-            return 1;
-        err = rdma_get_cm_event(cm_channel,&event);
-        if (err) 
-            return err;
-        if (event->event != RDMA_CM_EVENT_ESTABLISHED)
-        {
-            printf("Expected event: %s, got: %s\n",
-            get_rdma_event(RDMA_CM_EVENT_ESTABLISHED),
-            get_rdma_event(event->event));
-
-            return 1;
-        }
-        rdma_ack_cm_event(event);
-
         /* we need to check IBV_WR_RDMA_WRITE is done, so we post_recv at first */
         if (prepare_recv_notify_before_using_rdma_write(cm_id, pd))
             return 1;
