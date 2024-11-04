@@ -284,9 +284,6 @@ int main(int argc, char *argv[])
     rdma_ack_cm_event(event);
     while(1) 
     {
- 
-        /* Each rdmacm event should be acked. */
-        rdma_ack_cm_event(event);
         printf("starting the loop.\n");
         /*
         */
