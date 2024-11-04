@@ -336,6 +336,7 @@ int main(int argc, char *argv[])
 	rdma_ack_cm_event(event);
 
 	if (event->event == RDMA_CM_EVENT_DISCONNECTED) {
+        printf("end comm!\n");
 		rdma_destroy_qp(cm_id);
 		ibv_dereg_mr(mr);
 		free(buf);
