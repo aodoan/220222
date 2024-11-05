@@ -191,11 +191,11 @@ int main(int argc, char *argv[])
 	if (ibv_req_notify_cq(cq,0))
 		return 1;
 
-	buf = calloc(BUFSIZE ,sizeof(uint32_t)); 
+	buf = calloc(TOTALSIZE,sizeof(uint32_t)); 
 	if (!buf) 
 		return 1;
     /* register a memory region with a specific pd */
-	mr = ibv_reg_mr(pd, buf,BUFSIZE * sizeof(uint32_t), IBV_ACCESS_LOCAL_WRITE); 
+	mr = ibv_reg_mr(pd, buf, TOTALSIZE * sizeof(uint32_t), IBV_ACCESS_LOCAL_WRITE); 
 	if (!mr) 
 		return 1;
 

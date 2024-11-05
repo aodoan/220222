@@ -225,12 +225,12 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    buf = calloc(BUFSIZE, sizeof(uint32_t));
+    buf = calloc(TOTALSIZE, sizeof(uint32_t));
     if (!buf) 
         return 1;
 
     /* register a memory region with a specific pd */
-    mr = ibv_reg_mr(pd,buf,BUFSIZE*sizeof(uint32_t), 
+    mr = ibv_reg_mr(pd,buf,TOTALSIZE*sizeof(uint32_t), 
         IBV_ACCESS_LOCAL_WRITE | 
         IBV_ACCESS_REMOTE_READ | 
         IBV_ACCESS_REMOTE_WRITE); 
