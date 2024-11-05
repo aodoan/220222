@@ -24,18 +24,4 @@ const char* get_rdma_event(int event_num)
         return "Not an valid RDMA event identifier!";
 
     return rdma_event_strings[event_num];
-    /*
-    enum rdma_cm_event_type {
-   53     RDMA_CM_EVENT_CONNECT_ERROR,
-   54     RDMA_CM_EVENT_UNREACHABLE,
-   55     RDMA_CM_EVENT_REJECTED,
-   56     RDMA_CM_EVENT_ESTABLISHED,
-   57     RDMA_CM_EVENT_DISCONNECTED,
-   58     RDMA_CM_EVENT_DEVICE_REMOVAL,
-   59     RDMA_CM_EVENT_MULTICAST_JOIN,
-   60     RDMA_CM_EVENT_MULTICAST_ERROR,
-   61     RDMA_CM_EVENT_ADDR_CHANGE,
-   62     RDMA_CM_EVENT_TIMEWAIT_EXIT
-    */
-
 }
