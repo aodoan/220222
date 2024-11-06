@@ -236,6 +236,10 @@ int main(int argc, char *argv[])
 
     // Now receive all BUFSIZE elements
     printf("Received the following %d numbers:\n", BUFSIZE);
+    for (int i = 0; i < BUFSIZE; i++) 
+    {
+        printf("Received value %d: %d\n", i+1, ntohl(buf[i]));
+    }
 
 
     // Post send operation
