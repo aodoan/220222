@@ -215,10 +215,15 @@ int main(int argc, char *argv[])
         printf("starting the loop.\n");
 
         if (prepare_recv_notify_before_using_rdma_write(cm_id, pd))
+        {
+            printf("Crashed\n");
             return 1;
-
+        }
         if (check_notify_before_using_rdma_write(comp_chan, cq))
+        {
+            printf("Crashed 2\n");
             return 1;
+        }
 
         // Now receive all BUFSIZE elements
         printf("Received the following %d numbers:\n", BUFSIZE);
