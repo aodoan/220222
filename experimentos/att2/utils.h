@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#define DEFAULT_BUF_SIZE 131072
 
 /**
  * @brief get the name of the event based on the enum number

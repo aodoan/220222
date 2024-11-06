@@ -15,7 +15,7 @@
 
 enum { 
     RESOLVE_TIMEOUT_MS = 500, 
-    BUFSIZE = 512,
+    BUFSIZE = DEFAULT_BUF_SIZE,
 }; 
 
 struct pdata { 
@@ -78,7 +78,13 @@ int main(int argc, char *argv[])
     int n; 
     uint32_t *buf; 
     int err;
-     
+
+    if (argc != 3)
+    {
+        printf("Usage: %s [server_address] [file]\n", argv[0]);
+        exit(1);
+    } 
+
     // Create event channel
     cm_channel = rdma_create_event_channel(); 
     if (!cm_channel)
@@ -102,6 +108,7 @@ int main(int argc, char *argv[])
         printf("TCP port specified is being used. quitting.\n");
         return 1;
     }
+
 
     err = rdma_resolve_addr(cm_id, NULL, res->ai_addr, RESOLVE_TIMEOUT_MS);
     if (err)
@@ -215,10 +222,9 @@ int main(int argc, char *argv[])
     else
     {
         // Prepare the buffer with BUFSIZE elements
-        for (int i = 0; i < BUFSIZE; i++)
+        for (size_t i = 0; i < BUFSIZE; i++)
         {
             buf[i] = htonl(i + a);
-            printf("%d -> %d\n", i + 1, htonl(buf[i]));
         }
 
         // Prepare the RDMA write operation

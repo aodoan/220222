@@ -10,7 +10,7 @@
 
 enum { 
     RESOLVE_TIMEOUT_MS = 5000,
-    BUFSIZE = 512, 
+    BUFSIZE = DEFAULT_BUF_SIZE, 
 };
 
 struct pdata { 
@@ -236,10 +236,6 @@ int main(int argc, char *argv[])
 
     // Now receive all BUFSIZE elements
     printf("Received the following %d numbers:\n", BUFSIZE);
-    for (int i = 0; i < BUFSIZE; i++) 
-    {
-        printf("Received value %d: %d\n", i+1, ntohl(buf[i]));
-    }
 
 
     // Post send operation
@@ -269,7 +265,7 @@ int main(int argc, char *argv[])
 		return 1;
     }
     printf("Status of event: %d\n", wc.status);
-
+    
     // Clean up on disconnection
     err = rdma_get_cm_event(cm_channel,&event);
     if (err)
