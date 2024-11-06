@@ -7,7 +7,6 @@
 #include <string.h>
 
 #define BUFSIZE 512
-#define TOTALSIZE BUFSIZE * 4
 
 /**
  * @brief get the name of the event based on the enum number
