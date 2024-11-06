@@ -175,8 +175,8 @@ int main(int argc, char *argv[])
     fseek(file, 0, SEEK_SET);  // Reset the file pointer to the start
 
     buf[0] = (uint32_t)file_size;
-    printf("size %d, %d\n", file_size, buf[0]);
     size_t bytes_read = fread(buf + 1, 1, file_size, file);
+    printf("size %u\n", file_size, buf[0]);
     
     if (!buf) 
         return 1;
