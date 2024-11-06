@@ -236,6 +236,10 @@ int main(int argc, char *argv[])
 
     // Now receive all BUFSIZE elements
     printf("Received the file with %d bytes!\n", ntohl(buf[0]));
+    for (int i = 0; i < 10; i++)
+    {
+        printf("%d -> %d\n", i+1, htonl(buf[i]));
+    }
     /*
     FILE* write_file = fopen("send_file.bin", "wb");
     if (!write_file)

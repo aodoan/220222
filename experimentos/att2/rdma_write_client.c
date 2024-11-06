@@ -171,12 +171,15 @@ int main(int argc, char *argv[])
 
     // Seek to the end to get the size of the file
     fseek(file, 0, SEEK_END);
-    long file_size = ftell(file);
+    long int file_size = ftell(file);
     fseek(file, 0, SEEK_SET);  // Reset the file pointer to the start
 
-    buf[0] = (uint32_t)file_size;
+    buf[0] = htonl(file_size);
     size_t bytes_read = fread(buf + 1, 1, file_size, file);
-    printf("size %u\n", buf[0]);
+    for (int i = 0; i < 10; i++)
+    {
+        printf("%d -> %d\n", i+1, htonl(buf[i]));
+    }
     
     if (!buf) 
         return 1;
