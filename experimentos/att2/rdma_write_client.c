@@ -206,91 +206,88 @@ int main(int argc, char *argv[])
     long int a;
     printf("0 0 to quit!\n");
 
-    while (sentinel)
+    printf("Enter the first number: ");
+    scanf("%ld", &a);
+    if (a == -1)
     {
-        printf("Enter the first number: ");
-        scanf("%ld", &a);
-        if (a == -1)
+        sentinel = 0;
+    }
+    else
+    {
+        // Prepare the buffer with BUFSIZE elements
+        for (int i = 0; i < BUFSIZE; i++)
         {
-            sentinel = 0;
+            buf[i] = htonl(i + a);
+            printf("%d -> %d\n", i + 1, htonl(buf[i]));
         }
-        else
+
+        // Prepare the RDMA write operation
+        sge.addr = (uintptr_t)buf; 
+        sge.length = BUFSIZE * sizeof(uint32_t);
+        sge.lkey = mr->lkey;
+
+        send_wr.wr_id = 1;
+        send_wr.opcode = IBV_WR_RDMA_WRITE;
+        send_wr.send_flags = IBV_SEND_SIGNALED;
+        send_wr.sg_list = &sge;
+        send_wr.num_sge = 1;
+        send_wr.wr.rdma.rkey = ntohl(server_pdata.buf_rkey);
+        send_wr.wr.rdma.remote_addr = bswap_64(server_pdata.buf_va);
+
+        if (ibv_post_send(cm_id->qp, &send_wr, &bad_send_wr))
+            return 1;
+
+        // Wait for work completion
+        int end_loop = 0;
+        while (!end_loop)
         {
-            // Prepare the buffer with BUFSIZE elements
-            for (int i = 0; i < BUFSIZE; i++)
+            if (ibv_get_cq_event(comp_chan, &evt_cq, &cq_context))
             {
-                buf[i] = htonl(i + a);
-                printf("%d -> %d\n", i + 1, htonl(buf[i]));
-            }
-
-            // Prepare the RDMA write operation
-            sge.addr = (uintptr_t)buf; 
-            sge.length = BUFSIZE * sizeof(uint32_t);
-            sge.lkey = mr->lkey;
-
-            send_wr.wr_id = 1;
-            send_wr.opcode = IBV_WR_RDMA_WRITE;
-            send_wr.send_flags = IBV_SEND_SIGNALED;
-            send_wr.sg_list = &sge;
-            send_wr.num_sge = 1;
-            send_wr.wr.rdma.rkey = ntohl(server_pdata.buf_rkey);
-            send_wr.wr.rdma.remote_addr = bswap_64(server_pdata.buf_va);
-
-            if (ibv_post_send(cm_id->qp, &send_wr, &bad_send_wr))
+                puts("Failed to get cq event.");
                 return 1;
-
-            // Wait for work completion
-            int end_loop = 0;
-            while (!end_loop)
-            {
-                if (ibv_get_cq_event(comp_chan, &evt_cq, &cq_context))
-                {
-                    puts("Failed to get cq event.");
-                    return 1;
-                }
-
-                if (ibv_req_notify_cq(cq, 0))
-                {
-                    puts("Failed to get the notification.");
-                    return 1;
-                }
-
-                if (ibv_poll_cq(cq, 1, &wc) != 1)
-                {
-                    puts("failed to pull the wc");
-                    return 1;
-                }
-
-                if (wc.status != IBV_WC_SUCCESS)
-                {
-                    puts("wc received is not success.");
-                    return 1;
-                }
-
-                switch (wc.wr_id)
-                {
-                    case 0:
-                        printf("All good!\n");
-                        end_loop = 1;
-                        break;
-
-                    case 1:
-                        // Send notification after RDMA write is done
-                        if (prepare_send_notify_after_rdma_write(cm_id, pd))
-                        {
-                            printf("Sending notification failed\n");
-                            return 1;
-                        }
-                        break;
-
-                    default:
-                        printf("Ending loop\n");
-                        end_loop = 1;
-                        break;
-                }
             }
-            ibv_ack_cq_events(cq, 2);
+
+            if (ibv_req_notify_cq(cq, 0))
+            {
+                puts("Failed to get the notification.");
+                return 1;
+            }
+
+            if (ibv_poll_cq(cq, 1, &wc) != 1)
+            {
+                puts("failed to pull the wc");
+                return 1;
+            }
+
+            if (wc.status != IBV_WC_SUCCESS)
+            {
+                puts("wc received is not success.");
+                return 1;
+            }
+
+            switch (wc.wr_id)
+            {
+                case 0:
+                    printf("All good!\n");
+                    end_loop = 1;
+                    break;
+
+                case 1:
+                    // Send notification after RDMA write is done
+                    if (prepare_send_notify_after_rdma_write(cm_id, pd))
+                    {
+                        printf("Sending notification failed\n");
+                        return 1;
+                    }
+                    break;
+
+                default:
+                    printf("Ending loop\n");
+                    end_loop = 1;
+                    break;
+            }
         }
+        ibv_ack_cq_events(cq, 2);
     }
 
     // Clean up and disconnect

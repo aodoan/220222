@@ -222,57 +222,53 @@ int main(int argc, char *argv[])
     }
     rdma_ack_cm_event(event);
 
-    while(1) 
+
+    if (prepare_recv_notify_before_using_rdma_write(cm_id, pd))
     {
-        printf("starting the loop.\n");
-
-        if (prepare_recv_notify_before_using_rdma_write(cm_id, pd))
-        {
-            printf("Crashed\n");
-            return 1;
-        }
-        if (check_notify_before_using_rdma_write(comp_chan, cq))
-        {
-            printf("Crashed 2\n");
-            return 1;
-        }
-
-        // Now receive all BUFSIZE elements
-        printf("Received the following %d numbers:\n", BUFSIZE);
-        for (int i = 0; i < BUFSIZE; i++) 
-        {
-            printf("Received value %d: %d\n", i+1, ntohl(buf[i]));
-        }
-
-
-        // Post send operation
-        sge.addr = (uintptr_t)buf; 
-        sge.length = sizeof(uint32_t); 
-        sge.lkey = mr->lkey;
-    
-        send_wr.opcode = IBV_WR_SEND;
-        send_wr.send_flags = IBV_SEND_SIGNALED;
-        send_wr.sg_list = &sge;
-        send_wr.num_sge = 1;
-
-        if (ibv_post_send(cm_id->qp, &send_wr, &bad_send_wr)) 
-            return 1;
-
-        // Check for completion event
-		if (ibv_get_cq_event(comp_chan, &evt_cq, &cq_context))
-			return 1;
-		ibv_ack_cq_events(cq, 1);
-		if (ibv_req_notify_cq(cq, 0))
-			return 1;
-		if (ibv_poll_cq(cq, 1, &wc) != 1)
-			return 1;
-		if (wc.status != IBV_WC_SUCCESS)
-        {
-            puts("Work completion was not successful.");
-			return 1;
-        }
-        printf("Status of event: %d\n", wc.status);
+        printf("Crashed\n");
+        return 1;
     }
+    if (check_notify_before_using_rdma_write(comp_chan, cq))
+    {
+        printf("Crashed 2\n");
+        return 1;
+    }
+
+    // Now receive all BUFSIZE elements
+    printf("Received the following %d numbers:\n", BUFSIZE);
+    for (int i = 0; i < BUFSIZE; i++) 
+    {
+        printf("Received value %d: %d\n", i+1, ntohl(buf[i]));
+    }
+
+
+    // Post send operation
+    sge.addr = (uintptr_t)buf; 
+    sge.length = sizeof(uint32_t); 
+    sge.lkey = mr->lkey;
+    
+    send_wr.opcode = IBV_WR_SEND;
+    send_wr.send_flags = IBV_SEND_SIGNALED;
+    send_wr.sg_list = &sge;
+    send_wr.num_sge = 1;
+
+    if (ibv_post_send(cm_id->qp, &send_wr, &bad_send_wr)) 
+        return 1;
+
+    // Check for completion event
+	if (ibv_get_cq_event(comp_chan, &evt_cq, &cq_context))
+		return 1;
+	ibv_ack_cq_events(cq, 1);
+	if (ibv_req_notify_cq(cq, 0))
+		return 1;
+	if (ibv_poll_cq(cq, 1, &wc) != 1)
+		return 1;
+	if (wc.status != IBV_WC_SUCCESS)
+    {
+        puts("Work completion was not successful.");
+		return 1;
+    }
+    printf("Status of event: %d\n", wc.status);
 
     // Clean up on disconnection
     err = rdma_get_cm_event(cm_channel,&event);
