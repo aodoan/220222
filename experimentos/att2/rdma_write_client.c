@@ -176,7 +176,7 @@ int main(int argc, char *argv[])
 
     buf[0] = (uint32_t)file_size;
     size_t bytes_read = fread(buf + 1, 1, file_size, file);
-    printf("size %u\n", file_size, buf[0]);
+    printf("size %u\n", buf[0]);
     
     if (!buf) 
         return 1;
