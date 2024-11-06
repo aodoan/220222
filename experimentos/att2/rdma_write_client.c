@@ -191,11 +191,11 @@ int main(int argc, char *argv[])
 	if (ibv_req_notify_cq(cq,0))
 		return 1;
 
-	buf = calloc(BUFSIZE, sizeof(uint32_t)); 
+	buf = calloc(BUFSIZE ,sizeof(uint32_t)); 
 	if (!buf) 
 		return 1;
     /* register a memory region with a specific pd */
-	mr = ibv_reg_mr(pd, buf, BUFSIZE * sizeof(uint32_t), IBV_ACCESS_LOCAL_WRITE); 
+	mr = ibv_reg_mr(pd, buf,BUFSIZE * sizeof(uint32_t), IBV_ACCESS_LOCAL_WRITE); 
 	if (!mr) 
 		return 1;
 
@@ -255,7 +255,7 @@ int main(int argc, char *argv[])
 		{
 			/* We prepare ibv_post_recv() first */
 			sge.addr = (uintptr_t)buf; 
-			sge.length = sizeof(uint32_t) * BUFSIZE;
+			sge.length = sizeof(uint32_t);
 			sge.lkey = mr->lkey;
 
     		/* wr_id is used to identify the recv data when get ibv event */
