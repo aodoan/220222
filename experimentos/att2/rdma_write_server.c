@@ -244,15 +244,10 @@ int main(int argc, char *argv[])
             printf("Received value %d: %d\n", i+1, ntohl(buf[i]));
         }
 
-        // Example: Sending back the data (this could be any operation, like summing)
-        for (int i = 0; i < BUFSIZE; i++) 
-        {
-            buf[i] = htonl(ntohl(buf[i]) + 1); // Example operation
-        }
 
         // Post send operation
         sge.addr = (uintptr_t)buf; 
-        sge.length = BUFSIZE * sizeof(uint32_t); 
+        sge.length = sizeof(uint32_t); 
         sge.lkey = mr->lkey;
     
         send_wr.opcode = IBV_WR_SEND;
