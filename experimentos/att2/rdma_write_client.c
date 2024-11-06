@@ -161,25 +161,6 @@ int main(int argc, char *argv[])
 
     // Allocate memory for BUFSIZE elements
     buf = calloc(BUFSIZE, sizeof(uint32_t)); 
-     // Open the file in binary mode
-    FILE *file = fopen(argv[2], "rb");
-    if (!file) 
-    {
-        perror("Error opening file");
-        return 1;
-    }
-
-    // Seek to the end to get the size of the file
-    fseek(file, 0, SEEK_END);
-    long int file_size = ftell(file);
-    fseek(file, 0, SEEK_SET);  // Reset the file pointer to the start
-
-    buf[0] = htonl(file_size);
-    size_t bytes_read = fread(buf + 1, 1, file_size, file);
-    for (int i = 0; i < 10; i++)
-    {
-        printf("%d -> %d\n", i+1, htonl(buf[i]));
-    }
     
     if (!buf) 
         return 1;
@@ -241,10 +222,24 @@ int main(int argc, char *argv[])
     }
     else
     {
-        // Prepare the buffer with BUFSIZE elements
-        for (size_t i = 0; i < BUFSIZE; i++)
+        // Open the file in binary mode
+        FILE *file = fopen(argv[2], "rb");
+        if (!file) 
         {
-            buf[i] = htonl(i + a);
+            perror("Error opening file");
+            return 1;
+        }
+
+        // Seek to the end to get the size of the file
+        fseek(file, 0, SEEK_END);
+        long int file_size = ftell(file);
+        fseek(file, 0, SEEK_SET);  // Reset the file pointer to the start
+
+        buf[0] = htonl(file_size);
+        size_t bytes_read = fread(buf + 1, 1, file_size, file);
+        for (int i = 0; i < 10; i++)
+        {
+            printf("%d -> %d\n", i+1, htonl(buf[i]));
         }
 
         // Prepare the RDMA write operation
