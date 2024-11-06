@@ -29,7 +29,7 @@ enum {
 }; 
 struct pdata { 
     uint64_t	buf_va; 
-    uint8_t	buf_rkey;
+    uint32_t	buf_rkey;
 };
 
 int prepare_send_notify_after_rdma_write(struct rdma_cm_id *cm_id, struct ibv_pd *pd)
@@ -87,7 +87,7 @@ int main(int argc, char *argv[])
    		.ai_socktype  = SOCK_STREAM
    	};
 	int								n; 
-	uint8_t						*buf; 
+	uint32_t						*buf; 
 	int								err;
      
     /* We use rdmacm lib to establish rdma connection and ibv lib to write, read, send, receive data here. */
@@ -191,11 +191,11 @@ int main(int argc, char *argv[])
 	if (ibv_req_notify_cq(cq,0))
 		return 1;
 
-	buf = calloc(BUFSIZE,sizeof(uint8_t)); 
+	buf = calloc(BUFSIZE, sizeof(uint32_t)); 
 	if (!buf) 
 		return 1;
     /* register a memory region with a specific pd */
-	mr = ibv_reg_mr(pd, buf, BUFSIZE * sizeof(uint8_t), IBV_ACCESS_LOCAL_WRITE); 
+	mr = ibv_reg_mr(pd, buf, BUFSIZE * sizeof(uint32_t), IBV_ACCESS_LOCAL_WRITE); 
 	if (!mr) 
 		return 1;
 
@@ -255,7 +255,7 @@ int main(int argc, char *argv[])
 		{
 			/* We prepare ibv_post_recv() first */
 			sge.addr = (uintptr_t)buf; 
-			sge.length = sizeof(uint8_t);
+			sge.length = sizeof(uint32_t) * BUFSIZE;
 			sge.lkey = mr->lkey;
 
     		/* wr_id is used to identify the recv data when get ibv event */

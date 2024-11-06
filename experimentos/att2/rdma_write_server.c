@@ -26,7 +26,7 @@ enum {
 
 struct pdata { 
     uint64_t buf_va; 
-    uint8_t buf_rkey; 
+    uint32_t buf_rkey; 
 };
 
 int prepare_recv_notify_before_using_rdma_write(struct rdma_cm_id *cm_id, struct ibv_pd *pd)
@@ -37,7 +37,7 @@ int prepare_recv_notify_before_using_rdma_write(struct rdma_cm_id *cm_id, struct
 		return 1;
     struct ibv_sge notify_sge = {
         .addr = (uintptr_t)buf,
-        .length = sizeof(uint8_t),
+        .length = sizeof(uint32_t)*BUFSIZE,
         .lkey = mr->lkey,
     };
     struct ibv_recv_wr notify_wr = {
@@ -93,7 +93,7 @@ int main(int argc, char *argv[])
     struct ibv_wc               wc;
     void                        *cq_context;
     struct sockaddr_in          sin;
-    uint8_t                    *buf;
+    uint32_t                    *buf;
     int                         err;
 
     /* We use rdmacm lib to establish rdma connection and ibv lib to write, read, send, receive data here. */
@@ -225,12 +225,12 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    buf = calloc(BUFSIZE, sizeof(uint8_t));
+    buf = calloc(TOTALSIZE, sizeof(uint32_t));
     if (!buf) 
         return 1;
 
     /* register a memory region with a specific pd */
-    mr = ibv_reg_mr(pd,buf,BUFSIZE*sizeof(uint8_t), 
+    mr = ibv_reg_mr(pd,buf,TOTALSIZE*sizeof(uint32_t), 
         IBV_ACCESS_LOCAL_WRITE | 
         IBV_ACCESS_REMOTE_READ | 
         IBV_ACCESS_REMOTE_WRITE); 
@@ -305,7 +305,7 @@ int main(int argc, char *argv[])
         //printf("sum of both numbers is: %d\n", ntohl(buf[0]));
         /* register post send, here we use IBV_WR_SEND */
         sge.addr = (uintptr_t)buf; 
-        sge.length = sizeof(uint8_t); 
+        sge.length = sizeof(uint32_t); 
         sge.lkey = mr->lkey;
     
         send_wr.opcode = IBV_WR_SEND;
