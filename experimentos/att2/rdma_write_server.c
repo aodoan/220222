@@ -37,7 +37,7 @@ int prepare_recv_notify_before_using_rdma_write(struct rdma_cm_id *cm_id, struct
 		return 1;
     struct ibv_sge notify_sge = {
         .addr = (uintptr_t)buf,
-        .length = sizeof(uint32_t)*BUFSIZE,
+        .length = sizeof(uint32_t) * BUFSIZE,
         .lkey = mr->lkey,
     };
     struct ibv_recv_wr notify_wr = {
@@ -142,33 +142,10 @@ int main(int argc, char *argv[])
     err = rdma_listen(listen_id,1);
     if (err)
         return 1;
-    /*
-    err = rdma_get_cm_event(cm_channel,&event);
-    if (err)
-        return err;
-
-    if (event->event != RDMA_CM_EVENT_CONNECT_REQUEST)
-    {
-        //printf("First message of the client was not an connection request! Aborting conneciton.\n");
-        printf("Cannot proceed. Expected %s, got: %s\n", 
-        get_rdma_event(RDMA_CM_EVENT_CONNECT_REQUEST), get_rdma_event(event->event));
-        return 1;
-    }
-    // Ack the first message received
-    cm_id = event->id;
-    int ret = rdma_ack_cm_event(event);
-    printf("return of rdma_ack_cm_event -> %d\n", ret);
-    printf("Connection established.\n");
-    */
+    
     err = rdma_get_cm_event(cm_channel,&event);
     /* We need to "get" rdmacm event to acquire event occured on NIC. */
-    /*
-    if (event->event == RDMA_CM_EVENT_DISCONNECTED) 
-    {
-        printf("Got an %s, quitting!", get_rdma_event(event->event));
-        break;
-    }
-    */
+    
     if(err)
     {
         printf("error while getting rdma_get_cm_event: %d", err);
@@ -210,7 +187,7 @@ int main(int argc, char *argv[])
         * All the events about NIC, transmission will be in the cq 
         * Since libibverbs is thread-safe, use multiple cqs to 1 or many completion channels is avaliable.
         */
-    cq = ibv_create_cq(cm_id->verbs,1,NULL,comp_chan,0); 
+    cq = ibv_create_cq(cm_id->verbs, 1, NULL, comp_chan, 0); 
     if (!cq)
     {
         puts("Erro while creating completion queue");
@@ -225,12 +202,12 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    buf = calloc(TOTALSIZE, sizeof(uint32_t));
+    buf = calloc(BUFSIZE, sizeof(uint32_t));
     if (!buf) 
         return 1;
 
     /* register a memory region with a specific pd */
-    mr = ibv_reg_mr(pd,buf,TOTALSIZE*sizeof(uint32_t), 
+    mr = ibv_reg_mr(pd,buf,BUFSIZE*sizeof(uint32_t), 
         IBV_ACCESS_LOCAL_WRITE | 
         IBV_ACCESS_REMOTE_READ | 
         IBV_ACCESS_REMOTE_WRITE); 
