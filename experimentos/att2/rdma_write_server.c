@@ -235,13 +235,15 @@ int main(int argc, char *argv[])
     }
 
     // Now receive all BUFSIZE elements
-    printf("Received the following %d numbers:\n", BUFSIZE);
-    for (int i = 0; i < BUFSIZE; i++) 
+    printf("Received the file with %d bytes!\n", ntohl(buf[0]));
+    /*
+    FILE* write_file = fopen("send_file.bin", "wb");
+    if (!write_file)
     {
-        printf("Received value %d: %d\n", i+1, ntohl(buf[i]));
+        printf("Could not write file, aborting.\n");
+        exit(0);
     }
-
-
+    */
     // Post send operation
     sge.addr = (uintptr_t)buf; 
     sge.length = sizeof(uint32_t); 

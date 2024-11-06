@@ -161,6 +161,31 @@ int main(int argc, char *argv[])
 
     // Allocate memory for BUFSIZE elements
     buf = calloc(BUFSIZE, sizeof(uint32_t)); 
+     // Open the file in binary mode
+    FILE *file = fopen(argv[2], "rb");
+    if (!file) 
+    {
+        perror("Error opening file");
+        return 1;
+    }
+
+    // Seek to the end to get the size of the file
+    fseek(file, 0, SEEK_END);
+    long file_size = ftell(file);
+    fseek(file, 0, SEEK_SET);  // Reset the file pointer to the start
+
+    buf[0] = (uint32_t)file_size;
+
+    size_t bytes_read = fread(buf + 1, 1, file_size, file);
+    if (bytes_read != file_size) 
+    {
+        fprintf(stderr, "Error reading the file\n");
+        free(buf);
+        fclose(file);
+        return 1;
+    }
+
+
     if (!buf) 
         return 1;
 
