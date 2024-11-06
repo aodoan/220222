@@ -52,13 +52,25 @@ int check_notify_before_using_rdma_write(struct ibv_comp_channel *comp_chan, str
     void                    *cq_context;
 	
     if (ibv_get_cq_event(comp_chan,&evt_cq,&cq_context))
+    {
+        printf("failed to get cq event\n");
 		return 1;
+    }
 	if (ibv_req_notify_cq(cq,0))
+    {
+        printf("failed to get notification\n");
 		return 1;
+    }
 	if (ibv_poll_cq(cq,1,&wc) != 1)
+    {
+        printf("failed to pool completion request\n");
 		return 1;
+    }
 	if (wc.status != IBV_WC_SUCCESS)
+    {
+        printf("wc is not success\n");
 		return 1;
+    }
 
     return 0;
 }
