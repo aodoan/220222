@@ -240,6 +240,20 @@ int main(int argc, char *argv[])
     {
         printf("%d -> %d\n", i+1, htonl(buf[i]));
     }
+
+    FILE *file = fopen("output_file", "wb");
+    if (!file) 
+    {
+        perror("Error opening file");
+        return 1;
+    }
+    uint32_t file_size = ntohl(buf[0]); 
+    // Write the file contents from the buffer to the file
+    // Start writing from buf[1] onward (the actual file content)
+    fwrite(buf+1, sizeof(uint32_t), file_size, file);   
+
+    // Close the file after writing
+    fclose(file);
     /*
     FILE* write_file = fopen("send_file.bin", "wb");
     if (!write_file)
