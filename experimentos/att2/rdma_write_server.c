@@ -250,11 +250,7 @@ int main(int argc, char *argv[])
     long int file_size = ntohl(buf[0]); 
     // Write the file contents from the buffer to the file
     // Start writing from buf[1] onward (the actual file content)
-    for (size_t i = 1; i < file_size+1; i++) 
-    {
-        uint32_t data = ntohl(buf[i]); 
-        fwrite(&data, sizeof(uint32_t), 1, file);
-    }
+    fwrite(buf+1, sizeof(uint32_t), file_size, file);
  
 
     // Close the file after writing
