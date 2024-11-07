@@ -247,10 +247,10 @@ int main(int argc, char *argv[])
         perror("Error opening file");
         return 1;
     }
-    uint32_t file_size = ntohl(buf[0]); 
+    long int file_size = ntohl(buf[0]); 
     // Write the file contents from the buffer to the file
     // Start writing from buf[1] onward (the actual file content)
-    fwrite(buf+1, sizeof(uint32_t), file_size, file);   
+    fwrite(buf, sizeof(uint32_t), file_size, file);   
 
     // Close the file after writing
     fclose(file);
