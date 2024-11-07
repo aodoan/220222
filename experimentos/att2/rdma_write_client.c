@@ -20,7 +20,7 @@ enum {
 
 struct pdata { 
     uint64_t	buf_va; 
-    uint8_t	buf_rkey;
+    uint32_t	buf_rkey;
 };
 
 int prepare_send_notify_after_rdma_write(struct rdma_cm_id *cm_id, struct ibv_pd *pd)
@@ -76,7 +76,7 @@ int main(int argc, char *argv[])
         .ai_socktype  = SOCK_STREAM
     };
     int n; 
-    uint8_t *buf; 
+    uint32_t *buf; 
     int err;
 
     if (argc != 3)
@@ -160,13 +160,13 @@ int main(int argc, char *argv[])
         return 1;
 
     // Allocate memory for BUFSIZE elements
-    buf = calloc(BUFSIZE, sizeof(uint8_t)); 
+    buf = calloc(BUFSIZE, sizeof(uint32_t)); 
     
     if (!buf) 
         return 1;
 
     // Register memory region for BUFSIZE elements
-    mr = ibv_reg_mr(pd, buf, BUFSIZE * sizeof(uint8_t), IBV_ACCESS_LOCAL_WRITE); 
+    mr = ibv_reg_mr(pd, buf, BUFSIZE * sizeof(uint32_t), IBV_ACCESS_LOCAL_WRITE); 
     if (!mr) 
         return 1;
 
@@ -244,7 +244,7 @@ int main(int argc, char *argv[])
 
         // Prepare the RDMA write operation
         sge.addr = (uintptr_t)buf; 
-        sge.length = BUFSIZE * sizeof(uint8_t);
+        sge.length = BUFSIZE * sizeof(uint32_t);
         sge.lkey = mr->lkey;
 
         send_wr.wr_id = 1;
